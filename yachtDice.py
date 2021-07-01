@@ -12,20 +12,14 @@ from collections import Counter
 from time import ctime
 import json
 
-
 # 界面初始化
 screen = pygame.display.set_mode((600, 1000))
 pygame.display.set_caption('游艇骰子')
 pygame.init()
 
 # 图片导入
-img = [0, 0, 0, 0, 0, 0]
-img[0] = pygame.image.load('./images/1.png')
-img[1] = pygame.image.load('./images/2.png')
-img[2] = pygame.image.load('./images/3.png')
-img[3] = pygame.image.load('./images/4.png')
-img[4] = pygame.image.load('./images/5.png')
-img[5] = pygame.image.load('./images/6.png')
+img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
+       pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'), pygame.image.load('./images/6.png')]
 
 # 颜色
 white = (255, 255, 255)
