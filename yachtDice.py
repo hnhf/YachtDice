@@ -20,12 +20,13 @@ pygame.display.set_capyion('游艇骰子')
 pygame.init()
 
 #图片导入
-img[1] = pygame.image.load('D:/Program/YachtDice/images/1.png')
-img[2] = pygame.image.load('D:/Program/YachtDice/images/2.png')
-img[3] = pygame.image.load('D:/Program/YachtDice/images/3.png')
-img[4] = pygame.image.load('D:/Program/YachtDice/images/4.png')
-img[5] = pygame.image.load('D:/Program/YachtDice/images/5.png')
-img[6] = pygame.image.load('D:/Program/YachtDice/images/6.png')
+img = []
+img[0] = pygame.image.load('D:/Program/YachtDice/images/1.png')
+img[1] = pygame.image.load('D:/Program/YachtDice/images/2.png')
+img[2] = pygame.image.load('D:/Program/YachtDice/images/3.png')
+img[3] = pygame.image.load('D:/Program/YachtDice/images/4.png')
+img[4] = pygame.image.load('D:/Program/YachtDice/images/5.png')
+img[5] = pygame.image.load('D:/Program/YachtDice/images/6.png')
 
 #用于传递的数据
 msg = []
@@ -79,39 +80,46 @@ while True:
             bcx.append(data[0])
             bcy.append(data[1])
     for event in pygame.event.get():
-        if event.type==QUIT:
+        if event.type == QUIT:
             tcpCliSock.close()
             pygame.quit()
             sys.exit()
-        if settable==1:
-            if choose_score()==1:
-                draw_text('对手回合',200,420,15)
-                settable=0
-                msg1=json.dumps(msg)
-                tcpCliSock.sendto(msg1.encode(),ADDR)
-                msg=[]
+        if settable == 1:
+            roll_time = 1
+            roll_dice()
+            if roll_time < 3:
+                roll_time += 1
+                roll_dice()
+            else:
+                if choose_score() = 1:
+                    count_score
+                    draw_text('对手回合', 200, 420, 15)
+                    settable = 0
+                    msg1 = json.dumps(msg)
+                    ACTIVEEVENTtcpCliSock.sendto(msg1.encode(), ADDR)
+                    msg = []
     draw_dice()
-    if gameover()==1:
-        draw_text('你赢了！',200,420,15)
+    if gameover() == 1:
+        draw_text('你赢了！', 200, 420, 15)
         while True:
             for event in pygame.event.get():
-                if event.type==QUIT:
+                if event.type == QUIT:
                     pygame.quit()
                     sys.exit()
-    elif gameover()==0:
-        draw_text('你输了！',200,420,15)
+    elif gameover() == 2:
+        draw_text('你输了！', 200, 420, 15)
         while True:
             for event in pygame.event.get():
-                if event.type==QUIT:
+                if event.type == QUIT:
                     pygame.quit()
                     sys.exit()
-
-
-
-
-
-
-
+    elif gameover() == 3:
+        draw_text('平局！', 200, 420, 15)
+        while True:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
 
 
 
