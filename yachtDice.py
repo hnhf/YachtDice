@@ -25,6 +25,7 @@ img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'),
 # 颜色
 white = (255, 255, 255)
 gray = (200, 200, 200)
+red = (255, 0, 0)
 black = (0, 0, 0)
 
 # 分数记录
@@ -33,38 +34,44 @@ score_now_1 = np.zeros(17, dtype=int)
 score_now_2 = np.zeros(17,dtype=int)
 score_record_1 = np.zeros(17,dtype=int)
 score_record_2 = np.zeros(17,dtype=int)
-list_1 = ['玩家', '1', '2', '3', '4', '5', '6', 'bonus', '上半区总分', '三条', '四条',
+list_1 = ['1点', '2点', '3点', '4点', '5点', '6点', 'Bonus', '上半区总分', '三条', '四条',
           '葫芦', '小顺','大顺', '游艇', '全计', '下半区总分', '总分']
 
 # 显示数字
 font_color = (0, 0, 0)
 font_small = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 16)
-font_big = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 40)
+font_middle = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 28)
+font_big = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 65)
 
 
 def draw_board():
     screen.fill(bg_color)
     for i in range(5):
         screen.blit(img[dice[i]], (i * 100, 0))
-    roll_cha = font_big.render('摇', True, font_color)
-    screen.blit(roll_cha, (525, 30))
-    player_A = font_small.render('A', True, font_color)
-    player_B = font_small.render('B', True, font_color)
-    screen.blit(player_A, (250, 120))
-    screen.blit(player_B, (450, 120))
-    for j in range(18):
+    roll_cha = font_big.render('摇', True, red)
+    screen.blit(roll_cha, (510, 15))
+    players = font_middle.render('玩家', True, font_color)
+    player_A = font_middle.render('A', True, font_color)
+    player_B = font_middle.render('B', True, font_color)
+    screen.blit(players, (35, 110))
+    screen.blit(player_A, (248, 110))
+    screen.blit(player_B, (473, 110))
+    for j in range(17):
         element_1 = font_small.render(list_1[j], True, font_color)
-        screen.blit(element_1, (50, 120 + j * 40))
-    for k in range(17):
-        single_score_1 = font_small.render(str(score_record_1[k]), True, font_color)
-        single_score_2 = font_small.render(str(score_record_2[k]), True, font_color)
-        screen.blit(single_score_1, (250, 160 + k * 40))
-        screen.blit(single_score_2, (450, 160 + k * 40))
+        screen.blit(element_1, (50, 160 + j * 40))
+        single_score_1 = font_small.render(str(score_record_1[j]), True, font_color)
+        single_score_2 = font_small.render(str(score_record_2[j]), True, font_color)
+        screen.blit(single_score_1, (250, 160 + j * 40))
+        screen.blit(single_score_2, (475, 160 + j * 40))
+    pygame.draw.line(screen, black, (0, 100), (600, 100), (3))
+    pygame.draw.line(screen, black, (0, 100), (600, 100), (3))
     pygame.draw.line(screen, black, (0, 150), (600, 150), (3))
     pygame.draw.line(screen, gray, (0, 430), (600, 430), (3))
     pygame.draw.line(screen, gray, (0, 470), (600, 470), (3))
     pygame.draw.line(screen, gray, (0, 750), (600, 750), (3))
     pygame.draw.line(screen, black, (0, 790), (600, 790), (3))
+    pygame.draw.line(screen, gray, (150, 100), (150, 820), (3))
+    pygame.draw.line(screen, gray, (375, 100), (375, 820), (3))
     pygame.display.update()
 
 while True:
