@@ -13,8 +13,9 @@ from time import ctime
 import json
 
 # 界面初始化
-screen = pygame.display.set_mode((600, 1000))
+screen = pygame.display.set_mode((600, 820))
 pygame.display.set_caption('游艇骰子')
+bg_color = (255, 255, 255)
 pygame.init()
 
 # 图片导入
@@ -24,42 +25,50 @@ img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'),
 # 颜色
 white = (255, 255, 255)
 gray = (200, 200, 200)
+black = (0, 0, 0)
 
 # 分数记录
-dice = np.zeros(5)
-score_now_1 = np.zeros(17)
-score_now_2 = np.zeros(17)
-score_record_1 = np.zeros(17)
-score_record_2 = np.zeros(17)
-list_1 = ['玩家', '1', '2', '3', '4', '5', '6', 'bonus', '上半', '三条', '四条', '葫芦', '小顺', '大顺', '游艇', '全计', '下半', '总分']
+dice = [1, 2, 3, 4, 5]
+score_now_1 = np.zeros(17, dtype=int)
+score_now_2 = np.zeros(17,dtype=int)
+score_record_1 = np.zeros(17,dtype=int)
+score_record_2 = np.zeros(17,dtype=int)
+list_1 = ['玩家', '1', '2', '3', '4', '5', '6', 'bonus', '上半区总分', '三条', '四条',
+          '葫芦', '小顺','大顺', '游艇', '全计', '下半区总分', '总分']
 
 # 显示数字
-font_size_big = 10
-font_color = (0, 255, 255)
-font_big = pygame.font.Font("resources/font/Gabriola.ttf", font_size_big)
+font_color = (0, 0, 0)
+font_small = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 16)
+font_big = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 40)
 
 
 def draw_board():
+    screen.fill(bg_color)
     for i in range(5):
-        screen.blit(img[dice[i]], (i * 100 + 50, 50))
+        screen.blit(img[dice[i]], (i * 100, 0))
     roll_cha = font_big.render('摇', True, font_color)
-    screen.blit(roll_cha, (550, 50))
-    player_A = font_big.render('A', True, font_color)
-    player_B = font_big.render('B', True, font_color)
-    screen.blit(player_A, (300, 125))
-    screen.blit(player_B, (500, 125))
+    screen.blit(roll_cha, (525, 30))
+    player_A = font_small.render('A', True, font_color)
+    player_B = font_small.render('B', True, font_color)
+    screen.blit(player_A, (250, 120))
+    screen.blit(player_B, (450, 120))
     for j in range(18):
-        element_1 = font_big.render(list_1[j], True, font_color)
-        screen.blit(element_1, (100, 125 + j * 50))
+        element_1 = font_small.render(list_1[j], True, font_color)
+        screen.blit(element_1, (50, 120 + j * 40))
     for k in range(17):
-        single_score_1 = font_big.render(str(score_record_1[k]), True, font_color)
-        single_score_2 = font_big.render(str(score_record_2[k]), True, font_color)
-        screen.blit(single_score_1, (300, 175 + k * 50))
-        screen.blit(single_score_2, (500, 175 + k * 50))
+        single_score_1 = font_small.render(str(score_record_1[k]), True, font_color)
+        single_score_2 = font_small.render(str(score_record_2[k]), True, font_color)
+        screen.blit(single_score_1, (250, 160 + k * 40))
+        screen.blit(single_score_2, (450, 160 + k * 40))
+    pygame.draw.line(screen, black, (0, 150), (600, 150), (3))
+    pygame.draw.line(screen, gray, (0, 430), (600, 430), (3))
+    pygame.draw.line(screen, gray, (0, 470), (600, 470), (3))
+    pygame.draw.line(screen, gray, (0, 750), (600, 750), (3))
+    pygame.draw.line(screen, black, (0, 790), (600, 790), (3))
     pygame.display.update()
 
-
-draw_board()
+while True:
+    draw_board()
 
 # #掷骰子
 # def roll_dice():
