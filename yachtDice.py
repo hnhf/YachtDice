@@ -13,7 +13,7 @@ from socket import *
 from time import ctime
 import json
 import select
-
+#asdfafadf
 #界面初始化
 screen = pygame.display.set_mode((1000,500))
 pygame.display.set_capyion('游艇骰子')
