@@ -13,7 +13,6 @@ import config
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
-font_color = config.black
 font_small = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 16)
 font_middle = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 28)
 font_big = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 65)
@@ -43,17 +42,17 @@ class Ytz(object):
         pygame.draw.circle(self.screen, config.gray, (544, 48), 42)
         roll_cha = font_big.render('摇', True, config.red)
         self.screen.blit(roll_cha, (510, 15))
-        players = font_middle.render('玩家', True, font_color)
-        player_a = font_middle.render('A', True, font_color)
-        player_b = font_middle.render('B', True, font_color)
+        players = font_middle.render('玩家', True, config.black)
+        player_a = font_middle.render('A', True, config.black)
+        player_b = font_middle.render('B', True, config.black)
         self.screen.blit(players, (35, 110))
         self.screen.blit(player_a, (config.player_A_location - 2, 110))
         self.screen.blit(player_b, (config.player_B_location - 2, 110))
         for j in range(17):
-            element_1 = font_small.render(config.score_list[j], True, font_color)
+            element_1 = font_small.render(config.score_list[j], True, config.black)
             self.screen.blit(element_1, (50, 160 + j * 40))
-            single_score_1 = font_small.render(str(self.score_record_1[j]), True, font_color)
-            single_score_2 = font_small.render(str(self.score_record_2[j]), True, font_color)
+            single_score_1 = font_small.render(str(self.score_record_1[j]), True, config.black)
+            single_score_2 = font_small.render(str(self.score_record_2[j]), True, config.black)
             self.screen.blit(single_score_1, (config.player_A_location, 160 + j * 40))
             self.screen.blit(single_score_2, (config.player_B_location, 160 + j * 40))
         pygame.draw.line(self.screen, config.black, (0, 100), (config.x_length, 100), 3)
@@ -100,14 +99,16 @@ class Ytz(object):
     def draw_again(self):
         for i in range(5):
             self.screen.blit(self.img[self.dice[i]], (i * 100, 0))
-        score_now = self.count_score()
         if self.player == 1:
             location = config.player_A_location
         else:
             location = config.player_B_location
         for j in range(17):
+            if self.score_record_1[j] == -1:
+                single_score_1 = font_small.render(str(self.score_now[j]), True, config.blue)
+                self.screen.blit(single_score_1, (location, 160 + j * 40))
             if self.score_record_1[j] != -1:
-                single_score_1 = font_small.render(str(score_now[j]), True, font_color)
+                single_score_1 = font_small.render(str(self.score_record_1[j]), True, config.black)
                 self.screen.blit(single_score_1, (location, 160 + j * 40))
         pygame.display.update()
 
@@ -115,11 +116,13 @@ class Ytz(object):
     def draw_dice(self):
         for i in range(5):
             self.screen.blit(self.img[self.dice[i]], (50, i * 50))
+        for j in self.selected_dice:
+            pygame.draw.circle(self.screen, config.red, (j*100 + 50, 50), 30, 3)
         pygame.display.update()
 
     # 计算本次分数
     def count_score(self):
-        score_now = np.zeros(17, dtype=int)
+        self.score_now = np.zeros(17, dtype=int)
         dice1 = self.dice[:]  # 复制骰子数列
         dice_set = set(self.dice)  # 骰子点数集合
         dice_sum = sum(self.dice)  # 骰子点数之和
@@ -129,32 +132,31 @@ class Ytz(object):
             for score_i in range(5):
                 for point_i in range(6):
                     if dice1[dice_i] == point_i + 1:
-                        score_now[score_i] += point_i + 1
+                        self.score_now[score_i] += point_i + 1
         # 三条
         if dice1[0] == dice1[2] or dice1[1] == dice1[3] or dice1[2] == dice1[4]:
-            score_now[9] = dice_sum
+            self.score_now[9] = dice_sum
         # 四条
         if dice1[0] == dice1[3] or dice1[1] == dice1[4]:
-            score_now[10] = dice_sum
+            self.score_now[10] = dice_sum
         # 葫芦
         if dice1[0] == dice1[2] and dice1[3] == dice1[4] or \
                 dice1[0] == dice1[1] and dice1[2] == dice1[4]:
-            score_now[11] = 25
+            self.score_now[11] = 25
         # 小顺
         if dice_set & {1, 2, 3, 4} == {1, 2, 3, 4} or \
                 dice_set & {2, 3, 4, 5} == {2, 3, 4, 5} or \
                 dice_set & {3, 4, 5, 6} == {3, 4, 5, 6}:
-            score_now[12] = 30
+            self.score_now[12] = 30
         # 大顺
         if dice_set & {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5} or \
                 dice_set & {2, 3, 4, 5, 6} == {2, 3, 4, 5, 6}:
-            score_now[13] = 40
+            self.score_now[13] = 40
         # 游艇
         if dice1[0] == dice1[4]:
-            score_now[14] = 50
+            self.score_now[14] = 50
         # 全计
-        score_now[15] = dice_sum
-        return score_now
+        self.score_now[15] = dice_sum
 
     # 选择骰子
     def select_dice(self, selected_dice, e):
@@ -208,10 +210,11 @@ class Ytz(object):
         while True:
             for event in pygame.event.get():
                 e = self.check_event(event)
-                self.select_dice(self.selected_dice, e)  # 选择骰子
-                self.roll_dice(e)  # 摇骰子
-                self.choose_score(e)  # 选择分数
-                self.game_over()  # 判断胜负
+                if type(e) == int:
+                    self.select_dice(self.selected_dice, e)  # 选择骰子
+                    self.roll_dice(e)  # 摇骰子
+                    self.choose_score(e)  # 选择分数
+                    self.game_over()  # 判断胜负
 
 
 if __name__ == "__main__":
