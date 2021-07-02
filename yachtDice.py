@@ -9,62 +9,34 @@ import sys
 import numpy as np
 import pygame
 from pygame.locals import *
-
 import config
 
 pygame.display.set_caption('游艇骰子')
-bg_color = (255, 255, 255)
 pygame.init()
 
-# 图片导入
-img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
-       pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'), pygame.image.load('./images/6.png')]
-
-# 颜色
-white = (255, 255, 255)
-gray = (200, 200, 200)
-red = (255, 0, 0)
-black = (0, 0, 0)
-
-# 其他参数
-select_range = 30  # 鼠标点击的有效半径
-roll_time = 0  # 摇过的次数
-
-# 分数记录
-player = 1  # 当前玩家
-player_A_location = 250
-player_B_location = 475
-dice = [1, 2, 3, 4, 5]
-score_now_1 = np.zeros(17, dtype=int)  # 本轮骰子的各项分数
-score_now_2 = np.zeros(17, dtype=int)
-score_record_1 = np.zeros(17, dtype=int)  # 已经产生的分数
-score_record_2 = np.zeros(17, dtype=int)
-list_1 = ['1点', '2点', '3点', '4点', '5点', '6点', 'Bonus', '上半区总分', '三条', '四条',
-          '葫芦', '小顺', '大顺', '游艇', '全计', '下半区总分', '总分']
-
-# 显示数字
-font_color = (0, 0, 0)
+# 字体参数
+font_color = config.black
 font_small = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 16)
 font_middle = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 28)
 font_big = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 65)
 
+
 class Ytz(object):
     def __init__(self):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
-        self.bg_color = config.bg_color
+        self.bg_color = config.white
         self.img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'),
                     pygame.image.load('./images/3.png'),
                     pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
                     pygame.image.load('./images/6.png')]
-        self.dice = config.dice
-
+        self.dice = [1, 2, 3, 4, 5]
         self.score_now_1 = np.zeros(17, dtype=int)  # 本轮骰子的各项分数
         self.score_now_2 = np.zeros(17, dtype=int)
         self.score_record_1 = np.zeros(17, dtype=int)  # 已经产生的分数
         self.score_record_2 = np.zeros(17, dtype=int)
-
         self.selected_dice = []
-        self.roll_time = config.roll_time
+        self.roll_time = 0
+        self.player = 1
 
     def draw_board(self):
         self.screen.fill(self.bg_color)
@@ -98,58 +70,58 @@ class Ytz(object):
         pygame.display.update()
 
 
-def draw_again():
-    for i in range(5):
-        screen.blit(img[dice[i]], (i * 100, 0))
-    score_now = count_score()
-    if player == 1:
-        location = player_A_location
-    else:
-        location = player_B_location
-    for j in range(17):
-        if score_record_1[j] != -1:
-            single_score_1 = font_small.render(str(score_now[j]), True, font_color)
-            screen.blit(single_score_1, (location, 160 + j * 40))
-    pygame.display.update()
+    def draw_again():
+        for i in range(5):
+            screen.blit(img[dice[i]], (i * 100, 0))
+        score_now = count_score()
+        if player == 1:
+            location = player_A_location
+        else:
+            location = player_B_location
+        for j in range(17):
+            if score_record_1[j] != -1:
+                single_score_1 = font_small.render(str(score_now[j]), True, font_color)
+                screen.blit(single_score_1, (location, 160 + j * 40))
+        pygame.display.update()
 
 
-def count_score():
-    score_now = np.zeros(17, dtype=int)
-    dice1 = dice[:]  # 复制骰子数列
-    dice_set = set(dice)  # 骰子点数集合
-    dice_sum = sum(dice)  # 骰子点数之和
-    dice1.sort()  # 骰子点数重排
-    # 1到6单独点数分数
-    for dice_i in range(5):
-        for score_i in range(5):
-            for point_i in range(6):
-                if dice1[dice_i] == point_i + 1:
-                    score_now[score_i] += point_i + 1
-    # 三条
-    if dice1[0] == dice1[2] or dice1[1] == dice1[3] or dice1[2] == dice1[4]:
-        score_now[9] = dice_sum
-    # 四条
-    if dice1[0] == dice1[3] or dice1[1] == dice1[4]:
-        score_now[10] = dice_sum
-    # 葫芦
-    if dice1[0] == dice1[2] and dice1[3] == dice1[4] or \
-            dice1[0] == dice1[1] and dice1[2] == dice1[4]:
-        score_now[11] = 25
-    # 小顺
-    if dice_set & {1, 2, 3, 4} == {1, 2, 3, 4} or \
-            dice_set & {2, 3, 4, 5} == {2, 3, 4, 5} or \
-            dice_set & {3, 4, 5, 6} == {3, 4, 5, 6}:
-        score_now[12] = 30
-    # 大顺
-    if dice_set & {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5} or \
-            dice_set & {2, 3, 4, 5, 6} == {2, 3, 4, 5, 6}:
-        score_now[13] = 40
-    # 游艇
-    if dice1[0] == dice1[4]:
-        score_now[14] = 50
-    # 全计
-    score_now[15] = dice_sum
-    return score_now
+    def count_score():
+        score_now = np.zeros(17, dtype=int)
+        dice1 = dice[:]  # 复制骰子数列
+        dice_set = set(dice)  # 骰子点数集合
+        dice_sum = sum(dice)  # 骰子点数之和
+        dice1.sort()  # 骰子点数重排
+        # 1到6单独点数分数
+        for dice_i in range(5):
+            for score_i in range(5):
+                for point_i in range(6):
+                    if dice1[dice_i] == point_i + 1:
+                        score_now[score_i] += point_i + 1
+        # 三条
+        if dice1[0] == dice1[2] or dice1[1] == dice1[3] or dice1[2] == dice1[4]:
+            score_now[9] = dice_sum
+        # 四条
+        if dice1[0] == dice1[3] or dice1[1] == dice1[4]:
+            score_now[10] = dice_sum
+        # 葫芦
+        if dice1[0] == dice1[2] and dice1[3] == dice1[4] or \
+                dice1[0] == dice1[1] and dice1[2] == dice1[4]:
+            score_now[11] = 25
+        # 小顺
+        if dice_set & {1, 2, 3, 4} == {1, 2, 3, 4} or \
+                dice_set & {2, 3, 4, 5} == {2, 3, 4, 5} or \
+                dice_set & {3, 4, 5, 6} == {3, 4, 5, 6}:
+            score_now[12] = 30
+        # 大顺
+        if dice_set & {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5} or \
+                dice_set & {2, 3, 4, 5, 6} == {2, 3, 4, 5, 6}:
+            score_now[13] = 40
+        # 游艇
+        if dice1[0] == dice1[4]:
+            score_now[14] = 50
+        # 全计
+        score_now[15] = dice_sum
+        return score_now
 
 
     # 选择骰子
@@ -169,15 +141,15 @@ def count_score():
                         pass
 
 
-# 掷骰子
-def roll_dice(self, event_num, selected_dice):
-    if event_num == 5:
-        if event.type == MOUSEBUTTONDOWN:
-            (mouse_x, mouse_y) = pygame.mouse.get_pos()
-            if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < select_range:
-                for i in selected_dice:
-                    dice[i] = random.randint(1, 6)
-    selected_dice = []
+    # 掷骰子
+    def roll_dice(self, event_num, selected_dice):
+        if event_num == 5:
+            if event.type == MOUSEBUTTONDOWN:
+                (mouse_x, mouse_y) = pygame.mouse.get_pos()
+                if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < select_range:
+                    for i in selected_dice:
+                        dice[i] = random.randint(1, 6)
+        selected_dice = []
     # 掷骰子
     def roll_dice(self, event):
         if self.roll_time < 3:
