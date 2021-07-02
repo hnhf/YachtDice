@@ -4,10 +4,14 @@ Created on Thu Jul  1 17:14:09 2021
 
 @author: Fan
 """
-
-import numpy as np
+import random
 import pygame
+import sys
+import numpy as np
 from pygame.locals import *
+from collections import Counter
+from time import ctime
+import json
 
 # 界面初始化
 x_length = 600
@@ -27,9 +31,11 @@ gray = (200, 200, 200)
 red = (255, 0, 0)
 black = (0, 0, 0)
 
-# 分数记录
-selected_dice = []  # 摇之前选择的骰子
+# 其他参数
+select_range = 30  # 鼠标点击的有效半径
 roll_time = 0  # 摇过的次数
+
+# 分数记录
 player = 1  # 当前玩家
 player_A_location = 250
 player_B_location = 475
@@ -79,21 +85,6 @@ def draw_board():
     pygame.draw.line(screen, gray, (375, 100), (375, y_length), 3)
     pygame.display.update()
 
-
-# 掷骰子
-def roll_dice(event):
-    if roll_time == 0:
-        if event.type == '1':
-            # (mouse_x, mouse_y) = pygame.mouse.get_pos()
-            # if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < 30:
-            #     for i in selected_dice:
-            #         dice[i] = random.randint(1, 6)
-            pass
-
-
-while True:
-    for per_event in pygame.event.get():
-        roll_dice(per_event)
 
 #
 # def draw_again():
@@ -153,6 +144,37 @@ while True:
 #     draw_board()
 #
 
+# 选择骰子
+def select_dice(x):
+    if roll_time < 3:
+        if event.type == MOUSEBUTTONDOWN:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            for i in range(5):
+                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < select_range ^ 2 and (
+                        i + 1) not in x:
+                    x.append(i + 1)
+                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < select_range ^ 2 and (i + 1) in selected_dice:
+                    x.remove(i + 1)
+                else:
+                    pass
+
+
+# 掷骰子
+def roll_dice(event, selected_dice):
+    if roll_time < 3:
+        if event.type == MOUSEBUTTONDOWN:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < select_range:
+                for i in selected_dice:
+                    dice[i] = random.randint(1, 6)
+    selected_dice = []
+
+
+while True:
+    for event in pygame.event.get():
+        selected_dice = []
+        select_dice(selected_dice)
+        roll_dice(event, selected_dice)
 
 #
 # def draw_dice():
@@ -161,7 +183,7 @@ while True:
 #     pygame.display.update()
 #
 # #选择分数
-# def choose_score():
+# def choose_score(event):
 #     if event.type == MOUSEBUTTONDOWN:
 #         pos_score = pygame.mouse.get_pos()
 #
