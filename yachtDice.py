@@ -4,14 +4,10 @@ Created on Thu Jul  1 17:14:09 2021
 
 @author: Fan
 """
-import random
-import pygame
-import sys
+
 import numpy as np
+import pygame
 from pygame.locals import *
-from collections import Counter
-from time import ctime
-import json
 
 # 界面初始化
 x_length = 600
@@ -33,14 +29,14 @@ black = (0, 0, 0)
 
 # 分数记录
 selected_dice = []  # 摇之前选择的骰子
-roll_time = 0       # 摇过的次数
-player = 1          # 当前玩家
+roll_time = 0  # 摇过的次数
+player = 1  # 当前玩家
 player_A_location = 250
 player_B_location = 475
 dice = [1, 2, 3, 4, 5]
-score_now_1 = np.zeros(17, dtype=int)   # 本轮骰子的各项分数
+score_now_1 = np.zeros(17, dtype=int)  # 本轮骰子的各项分数
 score_now_2 = np.zeros(17, dtype=int)
-score_record_1 = np.zeros(17, dtype=int)    # 已经产生的分数
+score_record_1 = np.zeros(17, dtype=int)  # 已经产生的分数
 score_record_2 = np.zeros(17, dtype=int)
 list_1 = ['1点', '2点', '3点', '4点', '5点', '6点', 'Bonus', '上半区总分', '三条', '四条',
           '葫芦', '小顺', '大顺', '游艇', '全计', '下半区总分', '总分']
@@ -84,8 +80,21 @@ def draw_board():
     pygame.display.update()
 
 
+# 掷骰子
+def roll_dice(event):
+    if roll_time == 0:
+        if event.type == '1':
+            # (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            # if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < 30:
+            #     for i in selected_dice:
+            #         dice[i] = random.randint(1, 6)
+            pass
+
+
 while True:
-    draw_board()
+    for per_event in pygame.event.get():
+        roll_dice(per_event)
+
 #
 # def draw_again():
 #     for i in range(5):
@@ -143,14 +152,7 @@ while True:
 # while True:
 #     draw_board()
 #
-#掷骰子
-def roll_dice():
-    if roll_time == 0:
-    if event.type == MOUSEBUTTONDOWN:
-        (mouse_x, mouse_y) = pygame.mouse.get_pos()
-        if ((mouse_x-544)^2 + (mouse_y-48)^2)^0.5 < 30:
-            for i in selected_dice:
-                dice[i] = random.randint(1, 6)
+
 
 #
 # def draw_dice():
