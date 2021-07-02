@@ -8,6 +8,7 @@ import random
 import pygame
 import sys
 import numpy as np
+import pygame as pygame
 from pygame.locals import *
 from collections import Counter
 from time import ctime
@@ -86,82 +87,78 @@ def draw_board():
     pygame.display.update()
 
 
-#
-# def draw_again():
-#     for i in range(5):
-#         screen.blit(img[dice[i]], (i * 100, 0))
-#     score_now = count_score()
-#     if player == 1:
-#         location = player_A_location
-#     else:
-#         location = player_B_location
-#     for j in range(17):
-#         if score_record_1[j] != -1:
-#             single_score_1 = font_small.render(str(score_now[j]), True, font_color)
-#             screen.blit(single_score_1, (location, 160 + j * 40))
-#     pygame.display.update()
-#
-#
-# def count_score():
-#     score_now = np.zeros(17, dtype=int)
-#     dice1 = dice[:]  # 复制骰子数列
-#     dice_set = set(dice)  # 骰子点数集合
-#     dice_sum = sum(dice)  # 骰子点数之和
-#     dice1.sort()  # 骰子点数重排
-#     # 1到6单独点数分数
-#     for dice_i in range(5):
-#         for score_i in range(5):
-#             for point_i in range(6):
-#                 if dice1[dice_i] == point_i + 1:
-#                     score_now[score_i] += point_i + 1
-#     # 三条
-#     if dice1[0] == dice1[2] or dice1[1] == dice1[3] or dice1[2] == dice1[4]:
-#         score_now[9] = dice_sum
-#     # 四条
-#     if dice1[0] == dice1[3] or dice1[1] == dice1[4]:
-#         score_now[10] = dice_sum
-#     # 葫芦
-#     if dice1[0] == dice1[2] and dice1[3] == dice1[4] or \
-#             dice1[0] == dice1[1] and dice1[2] == dice1[4]:
-#         score_now[11] = 25
-#     # 小顺
-#     if dice_set & {1, 2, 3, 4} == {1, 2, 3, 4} or \
-#             dice_set & {2, 3, 4, 5} == {2, 3, 4, 5} or \
-#             dice_set & {3, 4, 5, 6} == {3, 4, 5, 6}:
-#         score_now[12] = 30
-#     # 大顺
-#     if dice_set & {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5} or \
-#             dice_set & {2, 3, 4, 5, 6} == {2, 3, 4, 5, 6}:
-#         score_now[13] = 40
-#     # 游艇
-#     if dice1[0] == dice1[4]:
-#         score_now[14] = 50
-#     # 全计
-#     score_now[15] = dice_sum
-#     return score_now
-#
-# while True:
-#     draw_board()
-#
+def draw_again():
+    for i in range(5):
+        screen.blit(img[dice[i]], (i * 100, 0))
+    score_now = count_score()
+    if player == 1:
+        location = player_A_location
+    else:
+        location = player_B_location
+    for j in range(17):
+        if score_record_1[j] != -1:
+            single_score_1 = font_small.render(str(score_now[j]), True, font_color)
+            screen.blit(single_score_1, (location, 160 + j * 40))
+    pygame.display.update()
+
+
+def count_score():
+    score_now = np.zeros(17, dtype=int)
+    dice1 = dice[:]  # 复制骰子数列
+    dice_set = set(dice)  # 骰子点数集合
+    dice_sum = sum(dice)  # 骰子点数之和
+    dice1.sort()  # 骰子点数重排
+    # 1到6单独点数分数
+    for dice_i in range(5):
+        for score_i in range(5):
+            for point_i in range(6):
+                if dice1[dice_i] == point_i + 1:
+                    score_now[score_i] += point_i + 1
+    # 三条
+    if dice1[0] == dice1[2] or dice1[1] == dice1[3] or dice1[2] == dice1[4]:
+        score_now[9] = dice_sum
+    # 四条
+    if dice1[0] == dice1[3] or dice1[1] == dice1[4]:
+        score_now[10] = dice_sum
+    # 葫芦
+    if dice1[0] == dice1[2] and dice1[3] == dice1[4] or \
+            dice1[0] == dice1[1] and dice1[2] == dice1[4]:
+        score_now[11] = 25
+    # 小顺
+    if dice_set & {1, 2, 3, 4} == {1, 2, 3, 4} or \
+            dice_set & {2, 3, 4, 5} == {2, 3, 4, 5} or \
+            dice_set & {3, 4, 5, 6} == {3, 4, 5, 6}:
+        score_now[12] = 30
+    # 大顺
+    if dice_set & {1, 2, 3, 4, 5} == {1, 2, 3, 4, 5} or \
+            dice_set & {2, 3, 4, 5, 6} == {2, 3, 4, 5, 6}:
+        score_now[13] = 40
+    # 游艇
+    if dice1[0] == dice1[4]:
+        score_now[14] = 50
+    # 全计
+    score_now[15] = dice_sum
+    return score_now
+
 
 # 选择骰子
-def select_dice(x):
-    if roll_time < 3:
-        if event.type == MOUSEBUTTONDOWN:
-            (mouse_x, mouse_y) = pygame.mouse.get_pos()
-            for i in range(5):
-                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < select_range ^ 2 and (
-                        i + 1) not in x:
-                    x.append(i + 1)
-                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < select_range ^ 2 and (i + 1) in selected_dice:
-                    x.remove(i + 1)
-                else:
-                    pass
+def select_dice(selected_dice, event_num):
+    if event_num in range(5):
+        if roll_time < 3:
+            if event_num not in selected_dice:
+                selected_dice.append(event_num)  # 点击某骰子并且数组里没有该筛子，则计入，并且在上面画一个圈
+                pygame.draw.circle(screen, gray, (event_num * 100, 50), 30)
+            if event_num in selected_dice:
+                selected_dice.remove(event_num)  # 点击某骰子并且数组里已有该筛子，则删除，并且重新展示筛子图片
+                screen.blit(img[dice[event_num]], (event_num * 100, 0))
+            else:
+                pass
+            pygame.display.update()
 
 
 # 掷骰子
-def roll_dice(event, selected_dice):
-    if roll_time < 3:
+def roll_dice(event_num, selected_dice):
+    if event_num == 5:
         if event.type == MOUSEBUTTONDOWN:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             if ((mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2) ^ 0.5 < select_range:
@@ -176,74 +173,89 @@ while True:
         select_dice(selected_dice)
         roll_dice(event, selected_dice)
 
-#
-# def draw_dice():
-#     for i in range(5):
-#         screen.blit(img[dice[i]],(50, i*50))
-#     pygame.display.update()
-#
-# #选择分数
-# def choose_score(event):
-#     if event.type == MOUSEBUTTONDOWN:
-#         pos_score = pygame.mouse.get_pos()
-#
-#
-# def game_over():
-#     if game_turn == 13:
-#         return 1
-#     else:
-#         return 0
-#
-# def draw_text(text,x,y,size):
-#     pygame.font.init()
-#     fontObj = pygame.font.SysFont('SimHei', size)
-#     textSurfaceObj = fontObj.render(text, True, white, black)
-#     textRectObj = textSurfaceObj.get_rect()
-#     textRectObj.center = (x, y)
-#     screen.blit(textSurfaceObj, textRectObj)
-#     pygame.display.update()
-#
-# #主循环
-# draw_board()
-#
-#
-# while True:
-#     for event in pygame.event.get():
-#         if event.type == QUIT:
-#             tcpCliSock.close()
-#             pygame.quit()
-#             sys.exit()
-#         if settable == 1:
-#             roll_time = 1
-#             roll_dice()
-#             if roll_time < 3:
-#                 roll_time += 1
-#                 roll_dice()
-#             else:
-#                 if choose_score() = 1:
-#                     count_score
-#                     draw_text('对手回合', 200, 420, 15)
-#                     settable = 0
-#
-#     draw_dice()
-#     if gameover() == 1:
-#         draw_text('你赢了！', 200, 420, 15)
-#         while True:
-#             for event in pygame.event.get():
-#                 if event.type == QUIT:
-#                     pygame.quit()
-#                     sys.exit()
-#     elif gameover() == 2:
-#         draw_text('你输了！', 200, 420, 15)
-#         while True:
-#             for event in pygame.event.get():
-#                 if event.type == QUIT:
-#                     pygame.quit()
-#                     sys.exit()
-#     elif gameover() == 3:
-#         draw_text('平局！', 200, 420, 15)
-#         while True:
-#             for event in pygame.event.get():
-#                 if event.type == QUIT:
-#                     pygame.quit()
-#                     sys.exit()
+
+def draw_dice():
+    for i in range(5):
+        screen.blit(img[dice[i]], (50, i * 50))
+    pygame.display.update()
+
+
+# 选择分数
+def choose_score(event):
+    if event.type == MOUSEBUTTONDOWN:
+        pos_score = pygame.mouse.get_pos()
+
+
+def game_over():
+    if game_turn == 13:
+        return 1
+    else:
+        return 0
+
+
+def draw_text(text, x, y, size):
+    pygame.font.init()
+    fontObj = pygame.font.SysFont('SimHei', size)
+    textSurfaceObj = fontObj.render(text, True, white, black)
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.center = (x, y)
+    screen.blit(textSurfaceObj, textRectObj)
+    pygame.display.update()
+
+
+# 主循环
+draw_board()
+
+while True:
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        # if settable == 1:
+        #     roll_time = 1
+        #     roll_dice()
+        #     if roll_time < 3:
+        #         roll_time += 1
+        #         roll_dice()
+        #     else:
+        #         if choose_score() == 1:
+        #             count_score
+        #             draw_text('对手回合', 200, 420, 15)
+        #             settable = 0
+        if event.type == MOUSEBUTTONDOWN:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            for i in range(5):
+                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < select_range ^ 2:
+                    select_dice(selected_dice, i)
+            if (mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2 < select_range ^ 2:
+                roll_dice()
+                draw_dice()
+                draw_score()
+            for i in range(17):
+                if (mouse_x - player_A_location) ^ 2 + (mouse_y - (160 + j * 40)) ^ 2 < 20 ^ 2:
+                    choose_score(i)
+                    draw_again()
+
+    if gameover() == 1:
+        draw_text('你赢了！', 200, 420, 15)
+        while True:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+    elif gameover() == 2:
+        draw_text('你输了！', 200, 420, 15)
+        while True:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+    elif gameover() == 3:
+        draw_text('平局！', 200, 420, 15)
+        while True:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+
