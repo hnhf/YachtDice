@@ -115,7 +115,7 @@ class Ytz(object):
     # 重画骰子
     def draw_dice(self):
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i]], (50, i * 50))
+            self.screen.blit(self.img[self.dice[i]], (i * 100, 0))
         for j in self.selected_dice:
             pygame.draw.circle(self.screen, config.red, (j*100 + 50, 50), 30, 3)
         pygame.display.update()
