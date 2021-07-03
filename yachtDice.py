@@ -175,18 +175,17 @@ class Ytz(object):
 
     # 选择分数
     def choose_score(self, e):
-        if self.player == 1 & (5 < e < 23) or self.player == 2 & (22 < e < 40):
-            if self.player == 1:
-                self.score_record_1[e - 6] = self.score_now[e - 6]
-                self.player = 2
-            elif self.player == 2:
-                self.score_record_2[e - 23] = self.score_now[e - 23]
-                self.player = 1
-            self.game_turn += 1
-            self.roll_time = 0
-            self.roll_dice(e)
+        if self.player == 1 & (5 < e < 23):
+            self.score_record_1[e - 6] = self.score_now[e - 6]
+            self.player = 2
+        elif self.player == 2 & (22 < e < 40):
+            self.score_record_2[e - 23] = self.score_now[e - 23]
+            self.player = 1
         else:
             return
+        self.game_turn += 1
+        self.roll_time = 0
+        self.roll_dice(e)
         print('choose_score')
 
     # 判断胜负
