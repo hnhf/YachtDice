@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pygame
 from pygame.locals import *
+from loguru import logger
 import config
 
 pygame.display.set_caption('游艇骰子')
@@ -149,11 +150,11 @@ class Ytz(object):
                 if e not in self.selected_dice:
                     self.selected_dice.append(e)
                     pygame.draw.circle(self.screen, config.red, (e * 100 + 50, 50), 50, 3)
-                    print(self.selected_dice)
+                    logger.info('{}select_dice 1'.format(e))
                 else:
                     self.selected_dice.remove(e)
                     self.screen.blit(self.img[self.dice[e] - 1], (e * 100, 0))
-                    print(self.selected_dice)
+                    logger.info("当前鼠标点击位置：{}， select dice".format(e))
                 pygame.display.update()
 
     # 摇骰子
@@ -162,7 +163,7 @@ class Ytz(object):
             if self.roll_time == 0:
                 for i in range(5):
                     self.dice[i] = random.randint(1, 6)
-            elif self.roll_time < 3 & len(self.selected_dice) != 0:
+            elif len(self.selected_dice) != 0:
                 for j in self.selected_dice:
                     self.dice[j] = random.randint(1, 6)
             else:
@@ -171,22 +172,24 @@ class Ytz(object):
             self.selected_dice = []
             self.count_score()
             self.draw_board()
-            print('roll_dice')
+            print('roll_dice', self.roll_time)
 
     # 选择分数
     def choose_score(self, e):
-        if self.player == 1 & (5 < e < 23):
-            self.score_record_1[e - 6] = self.score_now[e - 6]
-            self.player = 2
-        elif self.player == 2 & (22 < e < 40):
-            self.score_record_2[e - 23] = self.score_now[e - 23]
-            self.player = 1
-        else:
-            return
-        self.game_turn += 1
-        self.roll_time = 0
-        self.roll_dice(e)
-        print('choose_score')
+        if 5 < e < 40:
+            print('e=', e)
+            if self.player == 1 & (5 < e < 23):
+                self.score_record_1[e - 6] = self.score_now[e - 6]
+                self.player = 2
+            elif self.player == 2 & (22 < e < 40):
+                self.score_record_2[e - 23] = self.score_now[e - 23]
+                self.player = 1
+            else:
+                return
+            self.game_turn += 1
+            self.roll_time = 0
+            self.roll_dice(e)
+            print('choose_score')
 
     # 判断胜负
     def game_over(self):
@@ -210,6 +213,7 @@ class Ytz(object):
                     self.select_dice(e)  # 选择骰子
                     self.roll_dice(e)  # 摇骰子
                     self.choose_score(e)  # 选择分数
+                    print(self.player, self.roll_time, self.game_turn)
                 self.game_over()  # 判断胜负
 
 
