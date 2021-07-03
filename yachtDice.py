@@ -5,6 +5,7 @@ Created on Thu Jul  1 17:14:09 2021
 @author: Fan
 """
 import random
+import math
 import sys
 import numpy as np
 import pygame
@@ -14,12 +15,12 @@ import config
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
-font_roll = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 65)
-font_score = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 16)
-font_player = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 28)
-font_20 = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 20)
-font_25 = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 25)
-font_30 = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', 30)
+font_roll = pygame.font.Font('./font/simhei.ttf', config.roll_font)
+font_score = pygame.font.Font('./font/simhei.ttf', 20)
+font_player = pygame.font.Font('./font/simhei.ttf', 28)
+font_20 = pygame.font.Font('./font/simhei.ttf', 20)
+font_25 = pygame.font.Font('./font/simhei.ttf', 25)
+font_30 = pygame.font.Font('./font/simhei.ttf', 30)
 
 
 class Ytz(object):
@@ -50,13 +51,18 @@ class Ytz(object):
         # 显示出五个骰子和摇骰子按钮
         self.screen.fill(self.bg_color)
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i] - 1], (i * 100, 0))
-        pygame.draw.circle(self.screen, config.gray, (544, 48), 42)
-        self.screen.blit(font_roll.render('摇', True, config.red), (510, 15))
+            self.screen.blit(self.img[self.dice[i] - 1], (i * config.dice_length, 0))
+        pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
+        self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
         # 显示出游戏玩家
-        self.screen.blit(font_player.render('玩家', True, config.black), (35, 110))
-        self.screen.blit(font_player.render('A', True, config.black), (config.player_1_location - 2, 110))
-        self.screen.blit(font_player.render('B', True, config.black), (config.player_2_location - 2, 110))
+        self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn/2)), True, config.black), (42, 105))
+        self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
+        if self.player == "player_1":
+            player_color = [config.red, config.black]
+        else:
+            player_color = [config.black, config.red]
+        self.screen.blit(font_player.render('A', True, player_color[0]), (config.player_1_location - 2, config.dice_length + 6))
+        self.screen.blit(font_player.render('B', True, player_color[1]), (config.player_2_location - 2, config.dice_length + 6))
         # 显示出各项分数
         for player, data in self.score_record.items():
             if player == self.player:
@@ -64,42 +70,38 @@ class Ytz(object):
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], 160 + key * 40))
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
                     if not self.score_record[player][key]["recorded"]:
-                        single_score = font_score.render(str(self.score_now[key]), True, config.blue)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], 160 + key * 40))
+                        single_score = font_score.render(str(self.score_now[key]), True, config.gray)
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
             else:
                 for key, value in data.items():
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], 160 + key * 40))
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
         # 显示出屏幕左边的得分列表
-        for j in range(16):
+        for j in range(17):
             if j == 7 or j == 15:
                 score_list = font_25.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (50, 160 + j * 40))
+                self.screen.blit(score_list, (60, 142 + j * config.list_y_length))
             elif j == 16:
                 score_list = font_30.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (50, 160 + j * 40))
+                self.screen.blit(score_list, (70, 140 + j * config.list_y_length))
             else:
                 score_list = font_20.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (50, 160 + j * 40))
+                self.screen.blit(score_list, (80, 145 + j * config.list_y_length))
         # 用直线将各项分隔开
-        pygame.draw.line(self.screen, config.black, (0, 103), (config.x_length, 103), 3)
-        pygame.draw.line(self.screen, config.black, (0, 150), (config.x_length, 150), 3)
-        pygame.draw.line(self.screen, config.gray, (0, 430), (config.x_length, 430), 3)
-        pygame.draw.line(self.screen, config.gray, (0, 470), (config.x_length, 470), 3)
-        pygame.draw.line(self.screen, config.gray, (0, 750), (config.x_length, 750), 3)
-        pygame.draw.line(self.screen, config.black, (0, 790), (config.x_length, 790), 3)
-        pygame.draw.line(self.screen, config.gray, (150, 103), (150, config.y_length), 3)
-        pygame.draw.line(self.screen, config.gray, (375, 103), (375, config.y_length), 3)
+        for i in range(18):
+            pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i), (config.x_length, config.dice_length + config.list_y_length * i), 2)
+        pygame.draw.line(self.screen, config.gray, (config.list_x_length, 103), (config.list_x_length, config.y_length), 3)
+        pygame.draw.line(self.screen, config.gray, (config.list_x_length + config.list_player_length, 103), (config.list_x_length + config.list_player_length, config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
     def draw_text(self, text, xx, yy, size):
         pygame.font.init()
-        fontObj = pygame.font.Font('C:/Windows/Fonts/simhei.ttf', size)
+        fontObj = pygame.font.Font('./font/simhei.ttf', size)
         textSurfaceObj = fontObj.render(text, True, config.white, config.black)
         textRectObj = textSurfaceObj.get_rect()
         textRectObj.center = (xx, yy)
@@ -115,14 +117,14 @@ class Ytz(object):
         if event.type == MOUSEBUTTONDOWN:  # 鼠标点击，根据点击位置返回数字
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             for i in range(5):
-                if (mouse_x - (i * 100 + 50)) ** 2 + (mouse_y - 50) ** 2 < config.select_range ** 2:
+                if (mouse_x - (i * config.dice_length + config.dice_length / 2)) ** 2 + (mouse_y - config.dice_length / 2) ** 2 < config.select_range ** 2:
                     return i
-            if (mouse_x - 544) ** 2 + (mouse_y - 48) ** 2 < config.select_range ** 2:
+            if (mouse_x - config.roll_circle_position[0]) ** 2 + (mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return 5
             for i in range(17):
-                if (mouse_x - config.player_1_location) ** 2 + (mouse_y - (160 + i * 40)) ** 2 < 20 ** 2:
+                if (mouse_x - config.player_1_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
                     return i + 6
-                if (mouse_x - config.player_2_location) ** 2 + (mouse_y - (160 + i * 40)) ** 2 < 20 ** 2:
+                if (mouse_x - config.player_2_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
                     return i + 23
             (mouse_x, mouse_y) = (0, 0)  # 重置鼠标位置记录
             return -1  # 鼠标点击其他位置则返回-1
@@ -189,6 +191,8 @@ class Ytz(object):
                     self.dice[j] = random.randint(1, 6)
             else:
                 return
+            pygame.mixer.music.load('./audio/roll_dice.mp3')
+            pygame.mixer.music.play()
             self.roll_time += 1
             self.selected_dice = []
             self.count_score()
@@ -234,11 +238,11 @@ class Ytz(object):
     def game_over(self):
         if self.game_turn > 26:
             if self.score_record["player_1"][16]["score"] > self.score_record["player_2"][16]["score"]:
-                self.draw_text('玩家1胜利！', 200, 400, 50)
+                self.draw_text('玩家1胜利！', config.x_length / 2, config.y_length / 2, 50)
             elif self.score_record["player_1"][16]["score"] < self.score_record["player_2"][16]["score"]:
-                self.draw_text('玩家2胜利！', 200, 400, 50)
+                self.draw_text('玩家2胜利！', config.x_length / 2, config.y_length / 2, 50)
             else:
-                self.draw_text('平局了！', 200, 400, 50)
+                self.draw_text('平局了！', config.x_length / 2, config.y_length / 2, 50)
             while True:
                 for event in pygame.event.get():
                     self.check_event(event)
