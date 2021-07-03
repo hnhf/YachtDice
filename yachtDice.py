@@ -199,38 +199,36 @@ class Ytz(object):
         if 5 < e < 40:
             logger.info('Turn = {}, e = {}, player = {}'.format(self.game_turn, e, self.player))
             if (self.player == "player_1") and (5 < e < 23) or (self.player == "player_2") and (22 < e < 40):
-                #  ？？？if not self.score_record[self.player][6]["recorded"]:
-                #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
                 i = e - 6 if e < 23 else e - 23
-                self.score_record[self.player][i]["score"] = self.score_now[i]
-                self.score_record[self.player][i]["recorded"] = True
-                upper_half = 0
-                for ii in [6, 7, 15, 16]:
-                    self.score_record[self.player][ii]["score"] = 0
-                for j in range(6):
-                    upper_half += self.score_record[self.player][j]["score"]
-                if upper_half > 62:
-                    self.score_record[self.player][6]["score"] = 35
-                    self.score_record[self.player][7]["score"] = upper_half + 35
-                else:
-                    self.score_record[self.player][6]["score"] = upper_half - 63
-                    self.score_record[self.player][7]["score"] = upper_half
-                self.score_record[self.player][6]["recorded"] = True
-                for k in range(7):
-                    self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
-                if self.score_record[self.player][6]["score"] == 35:
-                    self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
-                                                                  self.score_record[self.player][15]["score"] + 35
-                else:
-                    self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
-                                                                  self.score_record[self.player][15]["score"]
-                self.player = "player_2" if (self.player == "player_1") else "player_1"  # 交换玩家
-            else:
-                return
-            self.game_turn += 1     # 回合数+1
-            self.roll_time = 0      # 摇骰子次数变为0
-            self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
-            self.draw_board()
+                if not self.score_record[self.player][i]["recorded"]:
+                    #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
+                    self.score_record[self.player][i]["score"] = self.score_now[i]
+                    self.score_record[self.player][i]["recorded"] = True
+                    upper_half = 0
+                    for ii in [6, 7, 15, 16]:
+                        self.score_record[self.player][ii]["score"] = 0
+                    for j in range(6):
+                        upper_half += self.score_record[self.player][j]["score"]
+                    if upper_half > 62:
+                        self.score_record[self.player][6]["score"] = 35
+                        self.score_record[self.player][7]["score"] = upper_half + 35
+                    else:
+                        self.score_record[self.player][6]["score"] = upper_half - 63
+                        self.score_record[self.player][7]["score"] = upper_half
+                    self.score_record[self.player][6]["recorded"] = True
+                    for k in range(7):
+                        self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
+                    if self.score_record[self.player][6]["score"] == 35:
+                        self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
+                                                                      self.score_record[self.player][15]["score"] + 35
+                    else:
+                        self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
+                                                                      self.score_record[self.player][15]["score"]
+                    self.player = "player_2" if (self.player == "player_1") else "player_1"  # 交换玩家
+                    self.game_turn += 1  # 回合数+1
+                    self.roll_time = 0  # 摇骰子次数变为0
+                    self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
+                    self.draw_board()
 
     # 判断胜负
     def game_over(self):
