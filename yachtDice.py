@@ -181,10 +181,10 @@ class Ytz(object):
     # 摇骰子
     def roll_dice(self, e):
         if e == 5:
-            if self.roll_time == 0:     # 如果是本回合第一次摇，那么随机化五个骰子
+            if self.roll_time == 0:             # 如果是本回合第一次摇，那么随机化五个骰子
                 for i in range(5):
                     self.dice[i] = random.randint(1, 6)
-            elif len(self.selected_dice) != 0:      # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
+            elif len(self.selected_dice) != 0:  # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
                 for j in self.selected_dice:
                     self.dice[j] = random.randint(1, 6)
             else:
@@ -199,7 +199,7 @@ class Ytz(object):
         if 5 < e < 40:
             logger.info('Turn = {}, e = {}, player = {}'.format(self.game_turn, e, self.player))
             if (self.player == "player_1") and (5 < e < 23) or (self.player == "player_2") and (22 < e < 40):
-                #  ？？？？if not self.score_record[self.player][6]["recorded"]:
+                #  ？？？if not self.score_record[self.player][6]["recorded"]:
                 #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
                 i = e - 6 if e < 23 else e - 23
                 self.score_record[self.player][i]["score"] = self.score_now[i]
