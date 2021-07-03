@@ -38,28 +38,39 @@ class Ytz(object):
     def draw_board(self):
         self.screen.fill(self.bg_color)
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i]-1], (i * 100, 0))
+            self.screen.blit(self.img[self.dice[i] - 1], (i * 100, 0))
         pygame.draw.circle(self.screen, config.gray, (544, 48), 42)
-        roll_cha = font_big.render('摇', True, config.red)
-        self.screen.blit(roll_cha, (510, 15))
-        players = font_middle.render('玩家', True, config.black)
-        player_a = font_middle.render('A', True, config.black)
-        player_b = font_middle.render('B', True, config.black)
-        self.screen.blit(players, (35, 110))
-        self.screen.blit(player_a, (config.player_A_location - 2, 110))
-        self.screen.blit(player_b, (config.player_B_location - 2, 110))
+        self.screen.blit(font_big.render('摇', True, config.red), (510, 15))
+        self.screen.blit(font_middle.render('玩家', True, config.black), (35, 110))
+        self.screen.blit(font_middle.render('A', True, config.black), (config.player_A_location - 2, 110))
+        self.screen.blit(font_middle.render('B', True, config.black), (config.player_B_location - 2, 110))
+        if self.player == 1:
+            for j in range(17):
+                if self.score_record_1[j] == -1:
+                    single_score_1 = font_small.render(str(self.score_now[j]), True, config.blue)
+                    self.screen.blit(single_score_1, (config.player_A_location, 160 + j * 40))
+                if self.score_record_1[j] != -1:
+                    single_score_1 = font_small.render(str(self.score_record_1[j]), True, config.black)
+                    self.screen.blit(single_score_1, (config.player_A_location, 160 + j * 40))
+        else:
+            for k in range(17):
+                if self.score_record_2[k] == -1:
+                    single_score_2 = font_small.render(str(self.score_now[k]), True, config.blue)
+                    self.screen.blit(single_score_2, (config.player_B_location, 160 + k * 40))
+                if self.score_record_2[k] != -1:
+                    single_score_2 = font_small.render(str(self.score_record_2[k]), True, config.black)
+                    self.screen.blit(single_score_2, (config.player_B_location, 160 + k * 40))
         for j in range(17):
             element_1 = font_small.render(config.score_list[j], True, config.black)
             self.screen.blit(element_1, (50, 160 + j * 40))
-        pygame.draw.line(self.screen, config.black, (0, 100), (config.x_length, 100), 3)
-        pygame.draw.line(self.screen, config.black, (0, 100), (config.x_length, 100), 3)
+        pygame.draw.line(self.screen, config.black, (0, 103), (config.x_length, 103), 3)
         pygame.draw.line(self.screen, config.black, (0, 150), (config.x_length, 150), 3)
         pygame.draw.line(self.screen, config.gray, (0, 430), (config.x_length, 430), 3)
         pygame.draw.line(self.screen, config.gray, (0, 470), (config.x_length, 470), 3)
         pygame.draw.line(self.screen, config.gray, (0, 750), (config.x_length, 750), 3)
         pygame.draw.line(self.screen, config.black, (0, 790), (config.x_length, 790), 3)
-        pygame.draw.line(self.screen, config.gray, (150, 100), (150, config.y_length), 3)
-        pygame.draw.line(self.screen, config.gray, (375, 100), (375, config.y_length), 3)
+        pygame.draw.line(self.screen, config.gray, (150, 103), (150, config.y_length), 3)
+        pygame.draw.line(self.screen, config.gray, (375, 103), (375, config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
@@ -81,41 +92,17 @@ class Ytz(object):
         if event.type == MOUSEBUTTONDOWN:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             for i in range(5):
-                if (mouse_x - (i * 100 + 50)) ^ 2 + (mouse_y - 50) ^ 2 < config.select_range ^ 2:
+                if (mouse_x - (i * 100 + 50)) ** 2 + (mouse_y - 50) ** 2 < config.select_range ** 2:
                     return i
-                    pass
-            if (mouse_x - 544) ^ 2 + (mouse_y - 48) ^ 2 < config.select_range ^ 2:
+            if (mouse_x - 544) ** 2 + (mouse_y - 48) ** 2 < config.select_range ** 2:
                 return 5
-                pass
             for i in range(17):
-                if (mouse_x - config.player_A_location) ^ 2 + (mouse_y - (160 + i * 40)) ^ 2 < 20 ^ 2:
+                if (mouse_x - config.player_A_location) ** 2 + (mouse_y - (160 + i * 40)) ** 2 < 20 ** 2:
                     return i + 6
-                    pass
-                if (mouse_x - config.player_B_location) ^ 2 + (mouse_y - (160 + i * 40)) ^ 2 < 20 ^ 2:
+                if (mouse_x - config.player_B_location) ** 2 + (mouse_y - (160 + i * 40)) ** 2 < 20 ** 2:
                     return i + 23
-                    pass
-
-    # 重新显示
-    def draw_again(self):
-        for i in range(5):
-            self.screen.blit(self.img[self.dice[i]-1], (i * 100, 0))
-        if self.player == 1:
-            for j in range(17):
-                if self.score_record_1[j] == -1:
-                    single_score_1 = font_small.render(str(self.score_now[j]), True, config.blue)
-                    self.screen.blit(single_score_1, (config.player_A_location, 160 + j * 40))
-                if self.score_record_1[j] != -1:
-                    single_score_1 = font_small.render(str(self.score_record_1[j]), True, config.black)
-                    self.screen.blit(single_score_1, (config.player_A_location, 160 + j * 40))
-        else:
-            for k in range(17):
-                if self.score_record_2[k] == -1:
-                    single_score_2 = font_small.render(str(self.score_now[k]), True, config.blue)
-                    self.screen.blit(single_score_2, (config.player_B_location, 160 + k * 40))
-                if self.score_record_2[k] != -1:
-                    single_score_2 = font_small.render(str(self.score_record_2[k]), True, config.black)
-                    self.screen.blit(single_score_2, (config.player_B_location, 160 + k * 40))
-        pygame.display.update()
+            (mouse_x, mouse_y) = (0, 0)
+            return -1
 
     # 计算本次分数
     def count_score(self):
@@ -153,6 +140,7 @@ class Ytz(object):
             self.score_now[13] = 50
         # 全计
         self.score_now[14] = dice_sum
+        print('count_score')
 
     # 选择骰子
     def select_dice(self, e):
@@ -160,28 +148,30 @@ class Ytz(object):
             if self.roll_time < 3:
                 if e not in self.selected_dice:
                     self.selected_dice.append(e)
-                    pygame.draw.circle(self.screen, config.red, (e * 100 + 50, 50), 30, 3)
-                if e in self.selected_dice:
+                    pygame.draw.circle(self.screen, config.red, (e * 100 + 50, 50), 50, 3)
+                    print(self.selected_dice)
+                else:
                     self.selected_dice.remove(e)
-                    self.screen.blit(self.img[self.dice[e]-1], (e * 100, 0))
+                    self.screen.blit(self.img[self.dice[e] - 1], (e * 100, 0))
+                    print(self.selected_dice)
                 pygame.display.update()
-        else:
-            return
 
     # 摇骰子
     def roll_dice(self, e):
-        if self.roll_time == 0:
-            for i in range(5):
-                self.dice[i] = random.randint(1, 6)
-        elif e == 6 & self.roll_time < 3 & len(self.selected_dice) != 0:
-            for j in self.selected_dice:
-                self.dice[j] = random.randint(1, 6)
-        else:
-            return
-        self.roll_time += 1
-        self.selected_dice = []
-        self.count_score()
-        self.draw_again()
+        if e == 5:
+            if self.roll_time == 0:
+                for i in range(5):
+                    self.dice[i] = random.randint(1, 6)
+            elif self.roll_time < 3 & len(self.selected_dice) != 0:
+                for j in self.selected_dice:
+                    self.dice[j] = random.randint(1, 6)
+            else:
+                return
+            self.roll_time += 1
+            self.selected_dice = []
+            self.count_score()
+            self.draw_board()
+            print('roll_dice')
 
     # 选择分数
     def choose_score(self, e):
@@ -197,6 +187,7 @@ class Ytz(object):
             self.roll_dice(e)
         else:
             return
+        print('choose_score')
 
     # 判断胜负
     def game_over(self):
@@ -220,7 +211,7 @@ class Ytz(object):
                     self.select_dice(e)  # 选择骰子
                     self.roll_dice(e)  # 摇骰子
                     self.choose_score(e)  # 选择分数
-                    self.game_over()  # 判断胜负
+                self.game_over()  # 判断胜负
 
 
 if __name__ == "__main__":
