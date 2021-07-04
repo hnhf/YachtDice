@@ -65,9 +65,9 @@ class Ytz(object):
         else:
             player_color = [config.black, config.red]
         self.screen.blit(font_player.render('玩家1', True, player_color[0]),
-                         (config.player_1_location - 30, config.dice_length + 6))
+                         (config.player_1_location - 30, config.dice_length + 5))
         self.screen.blit(font_player.render('玩家2', True, player_color[1]),
-                         (config.player_2_location - 30, config.dice_length + 6))
+                         (config.player_2_location - 30, config.dice_length + 5))
         # 显示出各项分数
         for player, data in self.score_record.items():
             if player == self.player:
