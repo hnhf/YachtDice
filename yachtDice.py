@@ -27,11 +27,11 @@ class Ytz(object):
     def __init__(self):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
-        self.img = [pygame.image.load('./images/1.png'), pygame.image.load('./images/2.png'),
-                    pygame.image.load('./images/3.png'),
+        self.img = [pygame.image.load('./images/0.jpg'), pygame.image.load('./images/1.png'),
+                    pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
                     pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
                     pygame.image.load('./images/6.png')]
-        self.dice = [1, 2, 3, 4, 5]
+        self.dice = np.zeros(5, dtype=int)
         self.score_now = np.zeros(17, dtype=int)  # 临时显示本次摇骰子的各项分数
         self.score_record = {"player_1": {}, "player_2": {}}  # 已经记录的分数
         for i in range(17):  # 创建dict对象来记录两位玩家的分数，False表示未计分
@@ -51,7 +51,7 @@ class Ytz(object):
         # 显示出五个骰子和摇骰子按钮
         self.screen.fill(self.bg_color)
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i] - 1], (i * config.dice_length, 0))
+            self.screen.blit(self.img[self.dice[i]], (i * config.dice_length, 0))
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
         # 显示出游戏玩家
@@ -109,8 +109,7 @@ class Ytz(object):
         pygame.display.update()
 
     # 检查事件
-    @staticmethod
-    def check_event(event):
+    def check_event(self, event):
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
@@ -120,14 +119,19 @@ class Ytz(object):
                 if (mouse_x - (i * config.dice_length + config.dice_length / 2)) ** 2 + (mouse_y - config.dice_length / 2) ** 2 < config.select_range ** 2:
                     return i
             if (mouse_x - config.roll_circle_position[0]) ** 2 + (mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
-                return 5
+                return 55
             for i in range(17):
                 if (mouse_x - config.player_1_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
                     return i + 6
                 if (mouse_x - config.player_2_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
                     return i + 23
             (mouse_x, mouse_y) = (0, 0)  # 重置鼠标位置记录
-            return -1  # 鼠标点击其他位置则返回-1
+        if event.type == MOUSEBUTTONUP:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            if (mouse_x - config.roll_circle_position[0]) ** 2 + (mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
+                return 5
+        return -1  # 鼠标点击其他位置则返回-1
+
 
     # 计算本次分数
     def count_score(self):
@@ -169,34 +173,40 @@ class Ytz(object):
     # 选择骰子
     def select_dice(self, e):
         if -1 < e < 5:
-            if self.roll_time < 3:
+            if 0 < self.roll_time < 3:
                 if e not in self.selected_dice:  # 如果e不在已选择的骰子中，则加入e
                     self.selected_dice.append(e)
                     pygame.draw.circle(self.screen, config.red, (e * 100 + 50, 50), 50, 3)
                     logger.info('{}select_dice 1'.format(e))
                 else:
                     self.selected_dice.remove(e)  # 如果e在已选择的骰子中，则去掉e
-                    self.screen.blit(self.img[self.dice[e] - 1], (e * 100, 0))
+                    self.screen.blit(self.img[self.dice[e]], (e * 100, 0))
                     logger.info("当前鼠标点击位置：{}， select dice".format(e))
                 pygame.display.update()
 
     # 摇骰子
     def roll_dice(self, e):
-        if e == 5:
-            if self.roll_time == 0:             # 如果是本回合第一次摇，那么随机化五个骰子
-                for i in range(5):
-                    self.dice[i] = random.randint(1, 6)
-            elif len(self.selected_dice) != 0:  # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
-                for j in self.selected_dice:
-                    self.dice[j] = random.randint(1, 6)
-            else:
-                return
-            pygame.mixer.music.load('./audio/roll_dice.mp3')
-            pygame.mixer.music.play()
-            self.roll_time += 1
-            self.selected_dice = []
-            self.count_score()
-            self.draw_board()
+        if e == 5 or e == 55:
+            if e == 55:
+                pygame.draw.circle(self.screen, config.green, config.roll_circle_position, 2 * config.roll_font / 3)
+                self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
+                pygame.display.update()
+            if e == 5:
+                if self.roll_time == 0:             # 如果是本回合第一次摇，那么随机化五个骰子
+                    for i in range(5):
+                        self.dice[i] = random.randint(1, 6)
+                elif len(self.selected_dice) != 0:  # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
+                    for j in self.selected_dice:
+                        self.dice[j] = random.randint(1, 6)
+                else:
+                    self.draw_board()
+                    return
+                pygame.mixer.music.load('./audio/roll_dice.mp3')
+                pygame.mixer.music.play()
+                self.roll_time += 1
+                self.selected_dice = []
+                self.count_score()
+                self.draw_board()
 
     # 选择分数
     def record_score(self, e):
@@ -231,6 +241,7 @@ class Ytz(object):
                     self.player = "player_2" if (self.player == "player_1") else "player_1"  # 交换玩家
                     self.game_turn += 1  # 回合数+1
                     self.roll_time = 0  # 摇骰子次数变为0
+                    self.dice = np.zeros(5, dtype=int)        # 初始化五个骰子
                     self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
                     self.draw_board()
 
