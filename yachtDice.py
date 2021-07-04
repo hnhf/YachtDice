@@ -55,14 +55,17 @@ class Ytz(object):
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
         # 显示出游戏玩家
-        self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn/2)), True, config.black), (42, 105))
+        self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
+                         (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
         if self.player == "player_1":
             player_color = [config.red, config.black]
         else:
             player_color = [config.black, config.red]
-        self.screen.blit(font_player.render('A', True, player_color[0]), (config.player_1_location - 2, config.dice_length + 6))
-        self.screen.blit(font_player.render('B', True, player_color[1]), (config.player_2_location - 2, config.dice_length + 6))
+        self.screen.blit(font_player.render('A', True, player_color[0]),
+                         (config.player_1_location - 2, config.dice_length + 6))
+        self.screen.blit(font_player.render('B', True, player_color[1]),
+                         (config.player_2_location - 2, config.dice_length + 6))
         # 显示出各项分数
         for player, data in self.score_record.items():
             if player == self.player:
@@ -70,16 +73,19 @@ class Ytz(object):
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"],
+                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
                     if not self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_now[key]), True, config.gray)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"],
+                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
             else:
                 for key, value in data.items():
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (self.score_record[player][key]["location"], config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
+                        self.screen.blit(single_score, (self.score_record[player][key]["location"],
+                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
         # 显示出屏幕左边的得分列表
         for j in range(17):
             if j == 7 or j == 15:
@@ -93,9 +99,12 @@ class Ytz(object):
                 self.screen.blit(score_list, (80, 145 + j * config.list_y_length))
         # 用直线将各项分隔开
         for i in range(18):
-            pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i), (config.x_length, config.dice_length + config.list_y_length * i), 2)
-        pygame.draw.line(self.screen, config.gray, (config.list_x_length, 103), (config.list_x_length, config.y_length), 3)
-        pygame.draw.line(self.screen, config.gray, (config.list_x_length + config.list_player_length, 103), (config.list_x_length + config.list_player_length, config.y_length), 3)
+            pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i),
+                             (config.x_length, config.dice_length + config.list_y_length * i), 2)
+        pygame.draw.line(self.screen, config.gray, (config.list_x_length, 103), (config.list_x_length, config.y_length),
+                         3)
+        pygame.draw.line(self.screen, config.gray, (config.list_x_length + config.list_player_length, 103),
+                         (config.list_x_length + config.list_player_length, config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
@@ -109,29 +118,36 @@ class Ytz(object):
         pygame.display.update()
 
     # 检查事件
-    def check_event(self, event):
+    @staticmethod
+    def check_event(event):
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
         if event.type == MOUSEBUTTONDOWN:  # 鼠标点击，根据点击位置返回数字
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             for i in range(5):
-                if (mouse_x - (i * config.dice_length + config.dice_length / 2)) ** 2 + (mouse_y - config.dice_length / 2) ** 2 < config.select_range ** 2:
+                if (mouse_x - (i * config.dice_length + config.dice_length / 2)) ** 2 + (
+                        mouse_y - config.dice_length / 2) ** 2 < config.select_range ** 2:
                     return i
-            if (mouse_x - config.roll_circle_position[0]) ** 2 + (mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
-                return 55
+            if (mouse_x - config.roll_circle_position[0]) ** 2 + (
+                    mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
+                return 55       # 鼠标在摇按钮处点下
             for i in range(17):
-                if (mouse_x - config.player_1_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
+                if (mouse_x - config.player_1_location) ** 2 + (
+                        mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
+                        config.list_y_length / 2) ** 2:
                     return i + 6
-                if (mouse_x - config.player_2_location) ** 2 + (mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (config.list_y_length / 2) ** 2:
+                if (mouse_x - config.player_2_location) ** 2 + (
+                        mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
+                        config.list_y_length / 2) ** 2:
                     return i + 23
             (mouse_x, mouse_y) = (0, 0)  # 重置鼠标位置记录
         if event.type == MOUSEBUTTONUP:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
-            if (mouse_x - config.roll_circle_position[0]) ** 2 + (mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
-                return 5
+            if (mouse_x - config.roll_circle_position[0]) ** 2 + (
+                    mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
+                return 5    # 鼠标在摇按钮处抬起
         return -1  # 鼠标点击其他位置则返回-1
-
 
     # 计算本次分数
     def count_score(self):
@@ -192,7 +208,7 @@ class Ytz(object):
                 self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
                 pygame.display.update()
             if e == 5:
-                if self.roll_time == 0:             # 如果是本回合第一次摇，那么随机化五个骰子
+                if self.roll_time == 0:  # 如果是本回合第一次摇，那么随机化五个骰子
                     for i in range(5):
                         self.dice[i] = random.randint(1, 6)
                 elif len(self.selected_dice) != 0:  # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
@@ -241,7 +257,7 @@ class Ytz(object):
                     self.player = "player_2" if (self.player == "player_1") else "player_1"  # 交换玩家
                     self.game_turn += 1  # 回合数+1
                     self.roll_time = 0  # 摇骰子次数变为0
-                    self.dice = np.zeros(5, dtype=int)        # 初始化五个骰子
+                    self.dice = np.zeros(5, dtype=int)  # 初始化五个骰子
                     self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
                     self.draw_board()
 
