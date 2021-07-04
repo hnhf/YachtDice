@@ -23,12 +23,15 @@ roll_circle_radius = 30
 
 
 # 颜色
+black = (0, 0, 0)
 white = (255, 255, 255)
-gray = (180, 180, 180)
+gray = (150, 150, 150)
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
-black = (0, 0, 0)
+yellow = (255, 255, 0)
+cyan = (0, 255, 255)
+purple = (255, 0, 255)
 
 player_1_location = list_x_length + list_player_length / 2
 player_2_location = list_x_length + list_player_length * 1.5

@@ -27,6 +27,7 @@ class Ytz(object):
     def __init__(self):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
+        self.bg_picture = pygame.image.load('./images/background.jpg')
         self.img = [pygame.image.load('./images/0.jpg'), pygame.image.load('./images/1.png'),
                     pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
                     pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
@@ -50,6 +51,7 @@ class Ytz(object):
     def draw_board(self):
         # 显示出五个骰子和摇骰子按钮
         self.screen.fill(self.bg_color)
+        self.screen.blit(self.bg_picture, (0, 100))
         for i in range(5):
             self.screen.blit(self.img[self.dice[i]], (i * config.dice_length, 0))
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
@@ -62,10 +64,10 @@ class Ytz(object):
             player_color = [config.red, config.black]
         else:
             player_color = [config.black, config.red]
-        self.screen.blit(font_player.render('A', True, player_color[0]),
-                         (config.player_1_location - 2, config.dice_length + 6))
-        self.screen.blit(font_player.render('B', True, player_color[1]),
-                         (config.player_2_location - 2, config.dice_length + 6))
+        self.screen.blit(font_player.render('玩家1', True, player_color[0]),
+                         (config.player_1_location - 30, config.dice_length + 6))
+        self.screen.blit(font_player.render('玩家2', True, player_color[1]),
+                         (config.player_2_location - 30, config.dice_length + 6))
         # 显示出各项分数
         for player, data in self.score_record.items():
             if player == self.player:
