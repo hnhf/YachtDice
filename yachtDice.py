@@ -92,20 +92,20 @@ class Ytz(object):
         for j in range(17):
             if j == 7 or j == 15:
                 score_list = font_25.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (60, 142 + j * config.list_y_length))
+                self.screen.blit(score_list, (60, 6 + config.dice_length + (j + 1) * config.list_y_length))
             elif j == 16:
                 score_list = font_30.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (70, 140 + j * config.list_y_length))
+                self.screen.blit(score_list, (70, 4 + config.dice_length + (j + 1) * config.list_y_length))
             else:
                 score_list = font_20.render(config.score_list[j], True, config.black)
-                self.screen.blit(score_list, (80, 145 + j * config.list_y_length))
+                self.screen.blit(score_list, (80, 8 + config.dice_length + (j + 1) * config.list_y_length))
         # 用直线将各项分隔开
         for i in range(18):
             pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i),
                              (config.x_length, config.dice_length + config.list_y_length * i), 2)
-        pygame.draw.line(self.screen, config.gray, (config.list_x_length, 103), (config.list_x_length, config.y_length),
+        pygame.draw.line(self.screen, config.black, (config.list_x_length, config.dice_length), (config.list_x_length, config.y_length),
                          3)
-        pygame.draw.line(self.screen, config.gray, (config.list_x_length + config.list_player_length, 103),
+        pygame.draw.line(self.screen, config.black, (config.list_x_length + config.list_player_length, config.dice_length),
                          (config.list_x_length + config.list_player_length, config.y_length), 3)
         pygame.display.update()
 
