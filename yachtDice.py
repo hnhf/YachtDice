@@ -12,6 +12,7 @@ import pygame
 from pygame.locals import *
 from loguru import logger
 import config
+import socket
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
@@ -43,7 +44,8 @@ class Ytz(object):
         for j in [7, 15, 16]:  # 对于Bonus和总分项不需要点击登记，而是实时计算
             self.score_record["player_1"][j]["recorded"] = True
             self.score_record["player_2"][j]["recorded"] = True
-        self.player = "player_1"  # 游戏初始玩家，之后将在“player_1"和"player_2"之间交替
+        self.your_player = 'player_1'  # 你的玩家
+        self.player = 'player_1'  # 游戏初始玩家，之后将在“player_1"和"player_2"之间交替
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
         self.selected_dice = []  # 选择要摇的骰子
@@ -103,9 +105,11 @@ class Ytz(object):
         for i in range(18):
             pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i),
                              (config.x_length, config.dice_length + config.list_y_length * i), 2)
-        pygame.draw.line(self.screen, config.black, (config.list_x_length, config.dice_length), (config.list_x_length, config.y_length),
+        pygame.draw.line(self.screen, config.black, (config.list_x_length, config.dice_length),
+                         (config.list_x_length, config.y_length),
                          3)
-        pygame.draw.line(self.screen, config.black, (config.list_x_length + config.list_player_length, config.dice_length),
+        pygame.draw.line(self.screen, config.black,
+                         (config.list_x_length + config.list_player_length, config.dice_length),
                          (config.list_x_length + config.list_player_length, config.y_length), 3)
         pygame.display.update()
 
@@ -123,8 +127,7 @@ class Ytz(object):
     @staticmethod
     def check_event(event):
         if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
+            return 41
         if event.type == MOUSEBUTTONDOWN:  # 鼠标点击，根据点击位置返回数字
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             for i in range(5):
@@ -133,7 +136,7 @@ class Ytz(object):
                     return i
             if (mouse_x - config.roll_circle_position[0]) ** 2 + (
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
-                return 55  # 鼠标在摇按钮处点下
+                return 40  # 鼠标在摇按钮处点下
             for i in range(17):
                 if (mouse_x - config.player_1_location) ** 2 + (
                         mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
@@ -204,8 +207,8 @@ class Ytz(object):
 
     # 摇骰子
     def roll_dice(self, e):
-        if e == 5 or e == 55:
-            if e == 55:
+        if e == 5 or e == 40:
+            if e == 40:
                 pygame.draw.circle(self.screen, config.green, config.roll_circle_position, 2 * config.roll_font / 3)
                 self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
                 pygame.display.update()
@@ -213,9 +216,11 @@ class Ytz(object):
                 if self.roll_time == 0:  # 如果是本回合第一次摇，那么随机化五个骰子
                     for i in range(5):
                         self.dice[i] = random.randint(1, 6)
+
                 elif len(self.selected_dice) != 0:  # 如果不是本回合第一次摇，且已经选择了一些骰子，随机化选择的骰子
                     for j in self.selected_dice:
                         self.dice[j] = random.randint(1, 6)
+
                 else:
                     self.draw_board()
                     return
@@ -225,6 +230,7 @@ class Ytz(object):
                 self.selected_dice = []
                 self.count_score()
                 self.draw_board()
+                return 1
 
     # 选择分数
     def record_score(self, e):
@@ -269,18 +275,55 @@ class Ytz(object):
                 self.draw_text('平局了！', config.x_length / 2, config.y_length / 2, 50)
             while True:
                 for event in pygame.event.get():
-                    self.check_event(event)
+                    if event.type == QUIT:
+                        pygame.quit()
+                        sys.exit()
 
     def run(self):
         self.draw_board()
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('112.232.240.231', 61746))
         while True:
-            for event in pygame.event.get():
-                e = self.check_event(event)
-                if type(e) == int:
+            data = s.recv(1024)
+            # 处理收到的消息
+            if len(data) == 3:
+                e = int.from_bytes(data, byteorder='big', signed=False)
+                self.your_player = 'player_1' if e == 100 else 'player_2'
+            if len(data) == 2:
+                e = int.from_bytes(data, byteorder='big', signed=False)
+                if e == 41:  # 退出游戏的event代码
+                    self.draw_text('对方退出', 200, 420, 15)
+                    while True:
+                        for event in pygame.event.get():
+                            if event.type == QUIT:
+                                pygame.quit()
+                                sys.exit()
+                else:  # 其他鼠标点击位置
                     self.select_dice(e)  # 选择骰子
-                    self.roll_dice(e)  # 摇骰子
                     self.record_score(e)  # 选择分数
-                self.game_over()  # 判断胜负
+                    self.game_over()  # 判断胜负
+            elif len(data) == 5:  # 长度为5说明收到的是self.dice，更新骰子信息
+                pygame.mixer.music.load('./audio/roll_dice.mp3')
+                pygame.mixer.music.play()
+                self.dice = list(data)
+                self.roll_time += 1
+                self.selected_dice = []
+                self.count_score()
+                self.draw_board()
+            # 如果是己方回合，允许处理本地事件并发送给服务端
+            if self.your_player == self.player:
+                for event in pygame.event.get():
+                    e = self.check_event(event)
+                    s.send(bytes(e))
+                    if e == 41:
+                        pygame.quit()
+                        sys.exit()
+                    else:
+                        self.select_dice(e)  # 选择骰子
+                        if self.roll_dice(e):  # 摇骰子
+                            s.send(bytes(self.dice))
+                        self.record_score(e)  # 选择分数
+                        self.game_over()  # 判断胜负
 
 
 if __name__ == "__main__":

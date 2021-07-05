@@ -6,7 +6,7 @@ HOST = '111.186.54.44'
 PORT = 61746
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
-s.listen(1)
+s.listen(5)
 print('Waiting for connection...')
 
 
