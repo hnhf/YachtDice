@@ -282,7 +282,7 @@ class Ytz(object):
     def run(self):
         self.draw_board()
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('112.232.240.231', 61746))
+        s.connect(('192.168.31.8', 6666))
         while True:
             data = s.recv(1024)
             # 处理收到的消息
@@ -314,8 +314,8 @@ class Ytz(object):
             if self.your_player == self.player:
                 for event in pygame.event.get():
                     e = self.check_event(event)
-                    s.send(bytes(e))
-                    if e == 41:
+                    s.send(e.to_bytes(length=2, byteorder='big', signed=False))
+                    if e ==41:
                         pygame.quit()
                         sys.exit()
                     else:
