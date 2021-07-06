@@ -4,6 +4,7 @@ Created on Thu Jul  1 17:14:09 2021
 
 @author: Fan
 """
+import json
 import random
 import math
 import sys
@@ -26,6 +27,7 @@ font_30 = pygame.font.Font('./font/simhei.ttf', 30)
 
 class Ytz(object):
     def __init__(self):
+        self.name = 'auto'
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load('./images/background.jpg')
@@ -279,10 +281,17 @@ class Ytz(object):
                         pygame.quit()
                         sys.exit()
 
+    @staticmethod
+    def login(client, name):
+        login_data = str({"protocol": "login", "player": name})
+        client.send(login_data.encode())
+
     def run(self):
         self.draw_board()
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('192.168.31.8', 6666))
+        s.connect(('127.0.0.1', 6666))
+        self.login(s, self.name)
+        # 启动时发一条登录
         while True:
             data = s.recv(1024)
             # 处理收到的消息
@@ -315,7 +324,7 @@ class Ytz(object):
                 for event in pygame.event.get():
                     e = self.check_event(event)
                     s.send(e.to_bytes(length=2, byteorder='big', signed=False))
-                    if e ==41:
+                    if e == 41:
                         pygame.quit()
                         sys.exit()
                     else:
