@@ -294,6 +294,7 @@ class Ytz(object):
     def login(self, protocol):
         self.order = protocol['order']
         self.opponent = protocol['opponent']
+        return True
 
     def protocol_handler(self, protocol):
         protocol_name = protocol['protocol']
@@ -306,7 +307,6 @@ class Ytz(object):
             return True
 
     def run(self):
-        self.draw_board()
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(('192.168.31.8', 6666))

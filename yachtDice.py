@@ -307,7 +307,6 @@ class Ytz(object):
             return True
 
     def run(self):
-        self.draw_board()
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(('192.168.31.8', 6666))
