@@ -161,7 +161,7 @@ class Ytz(object):
             if (mouse_x - config.roll_circle_position[0]) ** 2 + (
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return {"protocol": "roll_dice", "button": "up", 'from': self.name}  # 鼠标在摇按钮处抬起
-        return None  # 鼠标点击其他位置
+        return False  # 鼠标点击其他位置
 
     # 计算本次分数
     def count_score(self):
@@ -211,6 +211,7 @@ class Ytz(object):
                 else:
                     self.selected_dice.remove(e)  # 如果e在已选择的骰子中，则去掉e
                     logger.info("remove dice {}".format(e + 1))
+                return True
 
     # 摇骰子
     def roll_dice(self, protocol):
@@ -292,8 +293,8 @@ class Ytz(object):
 
     # 处理登录信息
     def login(self, protocol):
-        self.order = protocol['order']
-        self.opponent = protocol['opponent']
+        self.order = protocol.get('order', None)
+        self.opponent = protocol.get('opponent', None)
         return True
 
     def protocol_handler(self, protocol):
@@ -302,7 +303,7 @@ class Ytz(object):
             return None
         # 调用与协议同名的方法
         method = getattr(self, protocol_name)
-        if method(self, protocol):
+        if method(protocol):
             self.draw_board()
             return True
 
@@ -332,8 +333,9 @@ class Ytz(object):
                     pass
                 for event in pygame.event.get():
                     protocol = self.check_event(event)
-                    if self.protocol_handler(protocol):
-                        s.send(str(protocol).encode())
+                    if protocol:
+                        if self.protocol_handler(protocol):
+                            s.send(str(protocol).encode())
         except:
             s.close()
             logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
