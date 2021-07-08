@@ -8,6 +8,7 @@ import uuid
 from threading import Thread
 from loguru import logger
 
+
 class Server:
     """
     服务端主类
@@ -33,6 +34,7 @@ class Server:
             client, _ = self.listener.accept()  # 阻塞，等待客户端连接
             user = self.__user_cls(client, self.connections)
             self.connections.append(user)
+
             logger.info('有新连接进入，当前连接数：{}'.format(len(self.connections)))
 
     @classmethod
@@ -76,7 +78,7 @@ class Connection:
                 # 处理数据
                 self.deal_data(data)
         except:
-            self.socket.close()
+            # self.socket.close()
             self.connections.remove(self)
             logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
@@ -92,7 +94,7 @@ class Player(Connection):
 
     def __init__(self, *args):
         self.login_state = False  # 登录状态
-        self.game_data = None  # 玩家游戏中的相关数据
+        self.order = None  # 玩家游戏中的相关数据
         self.protocol_handler = ProtocolHandler()  # 协议处理对象
         super().__init__(*args)
 
@@ -101,24 +103,13 @@ class Player(Connection):
         我们规定协议类型：
             1.每个数据包都以json字符串格式传输
             2.json中必须要有protocol字段，该字段表示协议名称
-            3.因为会出现粘包现象，所以我们使用特殊字符串"|#|"进行数据包切割。这样的话，一定要注意数据包内不允许出现该字符。
-        例如我们需要的协议：
             登录协议：
-                客服端发送：{"protocol":"cli_login","username":"玩家账号","password":"玩家密码"}|#|
+                客户端发送：{"protocol":"login","username":"玩家账号"}
                 服务端返回：
                     登录成功：
-                        {"protocol":"ser_login","result":true,"player_data":{"uuid":"07103feb0bb041d4b14f4f61379fbbfa","nickname":"昵称","x":5,"y":5}}|#|
+                        {"protocol":"login","result":true,"order":‘’}
                     登录失败：
-                        {"protocol":"ser_login","result":false,"msg":"账号或密码错误"}|#|
-            当前所有在线玩家：
-                服务端发送：{"protocol":"ser_player_list","player_list":[{"uuid":"07103feb0bb041d4b14f4f61379fbbfa","nickname":"昵称","x":5,"y":5}]}|#|
-            玩家移动协议：
-                客户端发送：{"protocol":"cli_move","x":100,"y":100}|#|
-                服务端发送给所有客户端：{"protocol":"ser_move","player_data":{"uuid":"07103feb0bb041d4b14f4f61379fbbfa","nickname":"昵称","x":5,"y":5}}|#|
-            玩家上线协议：
-                服务端发送给所有客户端：{"protocol":"ser_online","player_data":{"uuid":"07103feb0bb041d4b14f4f61379fbbfa","nickname":"昵称","x":5,"y":5}}|#|
-            玩家下线协议：
-                服务端发送给所有客户端：{"protocol":"ser_offline","player_data":{"uuid":"07103feb0bb041d4b14f4f61379fbbfa","nickname":"昵称","x":5,"y":5}}|#|
+                        {"protocol":"login","result":false,"msg":"账号或密码错误"}
         """
         # 将字节流转成字符串
         event_str = data.decode()
@@ -132,7 +123,7 @@ class Player(Connection):
         给玩家发送协议包
         py_obj:python的字典或者list
         """
-        self.socket.sendall((json.dumps(py_obj, ensure_ascii=False) + '|#|').encode())
+        self.socket.sendall((json.dumps(py_obj, ensure_ascii=False)).encode())
 
     def send_all_player(self, py_obj):
         """
@@ -146,9 +137,10 @@ class Player(Connection):
         """
         发送给除了自己的所有在线玩家
         """
+        py_obj['from'] = 'opponent'
         for player in self.connections:
             if player is not self and player.login_state:
-                player.send(py_obj)
+                player.send(str(py_obj).encode())
 
 
 class ProtocolHandler:
@@ -159,7 +151,8 @@ class ProtocolHandler:
     def __call__(self, player, protocol):
         protocol_name = protocol['protocol']
         if not hasattr(self, protocol_name):
-            return None
+            player.send_without_self(protocol)
+            return
         # 调用与协议同名的方法
         method = getattr(self, protocol_name)
         result = method(player, protocol)
@@ -167,54 +160,17 @@ class ProtocolHandler:
 
     @staticmethod
     def login(player, protocol):
-        """
-        客户端登录请求
-        """
-        current_player = protocol['player']
+        player_list = []
+        for p in player.connections:
+            if p is not player and p.login_state:
+                player_list.append(p.game_data)
+        player.login_state = True
         # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        # 登录不成功
-        # if not login_state:
-        #     player.send({"protocol": "ser_login", "result": False, "msg": "账号或密码错误"})
-        #     return
-        #
-        # # 登录成功
-        # player.login_state = True
-        # player.game_data = {
-        #     'uuid': uuid.uuid4().hex,
-        #     'nickname': nickname,
-        #     'x': 5,  # 初始位置
-        #     'y': 5
-        # }
-        #
-        # # 发送登录成功协议
-        # player.send({"protocol": "ser_login", "result": True, "player_data": player.game_data})
-        #
-        # # 发送上线信息给其他玩家
-        # player.send_without_self({"protocol": "ser_online", "player_data": player.game_data})
-        #
-        # player_list = []
-        # for p in player.connections:
-        #     if p is not player and p.login_state:
-        #         player_list.append(p.game_data)
-        # # 发送当前在线玩家列表（不包括自己）
-        player.send({"protocol": "ser_player_list", "player_name": current_player})
-
-    @staticmethod
-    def roll_dice(player, protocol):
-        """
-        客户端移动请求
-        """
-        # 如果这个玩家没有登录，那么不理会这个数据包
-        if not player.login_state:
-            return
-
-        # 客户端想要去的位置
-        player.game_data['x'] = protocol.get('x')
-        player.game_data['y'] = protocol.get('y')
-
-        # 告诉其他玩家当前玩家的位置变化了
-        player.send_without_self({"protocol": "ser_move", "player_data": player.game_data})
+        player.order = len(player_list)
+        # 发送登录成功协议
+        player.send({"protocol": "login", "order": player.order})
+        player.send_without_self({"protocol": "login", "opponent": protocol['name']})
 
 
 if __name__ == '__main__':
-    server = Server('127.0.0.1', 6666)
+    server = Server('192.168.31.8', 6666)
