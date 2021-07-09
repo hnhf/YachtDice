@@ -293,8 +293,10 @@ class Ytz(object):
 
     # 处理登录信息
     def login(self, protocol):
-        self.order = protocol.get('order', None)
-        if hasattr(protocol, 'opponent'):
+        if 'order' in protocol:
+            logger.info('order:', protocol['order'])
+            self.order = protocol.get('order', None)
+        if 'opponent' in protocol:
             self.opponent = protocol['opponent']
             self.player = [self.name, 'opponent'][self.order]
         return True

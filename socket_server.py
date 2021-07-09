@@ -141,7 +141,7 @@ class Player(Connection):
         py_obj['from'] = 'opponent'
         for player in self.connections:
             if player is not self and player.login_state:
-                player.send(str(py_obj).encode())
+                player.send(py_obj)
 
 
 class ProtocolHandler:
@@ -163,7 +163,7 @@ class ProtocolHandler:
     def login(player, protocol):
         player.login_state = True
         # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        player.order = len(player.connections)
+        player.order = len(player.connections) - 1
         player.name = protocol['name']
         # 发送登录成功协议
         player.send({"protocol": "login", "order": player.order})
