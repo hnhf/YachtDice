@@ -34,7 +34,7 @@ class Ytz(object):
                     pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
                     pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
                     pygame.image.load('./images/6.png')]
-        self.name = 'auto2'  # 玩家昵称
+        self.name = '大麻'  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
         self.player = None  # 当前回合玩家
@@ -78,25 +78,27 @@ class Ytz(object):
         self.screen.blit(font_player.render(self.opponent, True, player_color[1]),
                          (player_location[1] - 30, config.dice_length + 5))
         # 显示出各项分数
+        score_location = [config.player_1_location, config.player_2_location]
         for player, data in self.score_record.items():
-            i = 0 if self.order == 1 else 1
             if player == self.player:
+                i = 0 if self.player == self.name and self.order == 0 or self.player != self.name and self.order == 1 else 1
                 for key, value in data.items():
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (player_location[self.order],
+                        self.screen.blit(single_score, (score_location[i],
                                                         config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
                     if not self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_now[key]), True, config.gray)
-                        self.screen.blit(single_score, (player_location[self.order],
+                        self.screen.blit(single_score, (score_location[i],
                                                         config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
             else:
+                i = 1 if self.player == self.name and self.order == 0 or self.player != self.name and self.order == 1 else 0
                 for key, value in data.items():
                     if self.score_record[player][key]["recorded"]:
                         single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                          config.black)
-                        self.screen.blit(single_score, (player_location[i],
+                        self.screen.blit(single_score, (score_location[i],
                                                         config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
         # 显示出屏幕左边的得分列表
         for j in range(17):
@@ -294,7 +296,7 @@ class Ytz(object):
     # 处理登录信息
     def login(self, protocol):
         if 'order' in protocol:
-            logger.info('order:', protocol['order'])
+            logger.info('order:{}'.format(protocol['order']))
             self.order = protocol.get('order', None)
         if 'opponent' in protocol:
             self.opponent = protocol['opponent']
