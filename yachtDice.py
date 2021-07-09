@@ -14,6 +14,7 @@ from pygame.locals import *
 from loguru import logger
 import config
 import socket
+import threading
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
@@ -53,6 +54,7 @@ class Ytz(object):
             self.score_record[self.name][j]["recorded"] = True
             self.score_record["opponent"][j]["recorded"] = True
 
+    # 画出游戏界面
     def draw_board(self):
         # 显示出五个骰子和摇骰子按钮
         self.screen.fill(self.bg_color)
@@ -136,7 +138,7 @@ class Ytz(object):
         self.screen.blit(textSurfaceObj, textRectObj)
         pygame.display.update()
 
-    # 检查事件
+    # 检查事件，一个返回字典
     def check_event(self, event):
         if event.type == QUIT:
             return {"protocol": 'offline', "button": 'quit', 'from': self.name}
@@ -166,7 +168,7 @@ class Ytz(object):
                 return {"protocol": "roll_dice", "button": "up", 'from': self.name}  # 鼠标在摇按钮处抬起
         return False  # 鼠标点击其他位置
 
-    # 计算本次分数
+    # 计算本次各项分数
     def count_score(self):
         self.score_now = np.zeros(17, dtype=int)
         dice1 = list(self.dice)  # 复制骰子数列, 以防下列操作影响原数列
@@ -214,7 +216,7 @@ class Ytz(object):
                 else:
                     self.selected_dice.remove(e)  # 如果e在已选择的骰子中，则去掉e
                     logger.info("remove dice {}".format(e + 1))
-                return True
+                    return True
 
     # 摇骰子
     def roll_dice(self, protocol):
@@ -248,40 +250,42 @@ class Ytz(object):
             logger.debug("opponent_dice :{}".format(protocol['dice']))
             self.dice = protocol['dice']
             self.count_score()
+            self.roll_time += 1
             return True
 
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
         if (protocol['from'] == self.name) and (self.order*17 + 5 < e < self.order*17 + 23) or protocol['from'] == 'opponent':
-            i = e - 6 if e < 23 else e - 23
-            if not self.score_record[self.player][i]["recorded"]:
-                #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
-                logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[i]))
-                self.score_record[self.player][i]["score"] = self.score_now[i]
-                self.score_record[self.player][i]["recorded"] = True
-                upper_half = 0
-                for ii in [6, 7, 15, 16]:
-                    self.score_record[self.player][ii]["score"] = 0
-                for j in range(6):
-                    upper_half += self.score_record[self.player][j]["score"]
-                if upper_half > 62:
-                    self.score_record[self.player][6]["score"] = 35
-                    self.score_record[self.player][7]["score"] = upper_half + 35
-                else:
-                    self.score_record[self.player][6]["score"] = upper_half - 63
-                    self.score_record[self.player][7]["score"] = upper_half
-                self.score_record[self.player][6]["recorded"] = True
-                for k in range(7):
-                    self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
-                self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
-                                                              self.score_record[self.player][15]["score"]
-                self.player = self.name if (self.player == 'opponent') else 'opponent'  # 交换玩家
-                self.game_turn += 1  # 回合数+1
-                self.roll_time = 0  # 摇骰子次数变为0
-                self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
-                self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
-                return True
+            if self.roll_time != 0:
+                i = e - 6 if e < 23 else e - 23
+                if not self.score_record[self.player][i]["recorded"]:
+                    #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
+                    logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[i]))
+                    self.score_record[self.player][i]["score"] = self.score_now[i]
+                    self.score_record[self.player][i]["recorded"] = True
+                    upper_half = 0
+                    for ii in [6, 7, 15, 16]:
+                        self.score_record[self.player][ii]["score"] = 0
+                    for j in range(6):
+                        upper_half += self.score_record[self.player][j]["score"]
+                    if upper_half > 62:
+                        self.score_record[self.player][6]["score"] = 35
+                        self.score_record[self.player][7]["score"] = upper_half + 35
+                    else:
+                        self.score_record[self.player][6]["score"] = upper_half - 63
+                        self.score_record[self.player][7]["score"] = upper_half
+                    self.score_record[self.player][6]["recorded"] = True
+                    for k in range(7):
+                        self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
+                    self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
+                                                                  self.score_record[self.player][15]["score"]
+                    self.player = self.name if (self.player == 'opponent') else 'opponent'  # 交换玩家
+                    self.game_turn += 1  # 回合数+1
+                    self.roll_time = 0  # 摇骰子次数变为0
+                    self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
+                    self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
+                    return True
 
     # 判断胜负
     def game_over(self):
@@ -308,16 +312,17 @@ class Ytz(object):
             self.player = [self.name, 'opponent'][self.order]
         return True
 
+    # 检查协议并调用方法
     def protocol_handler(self, protocol):
         protocol_name = protocol['protocol']
         if not hasattr(self, protocol_name):
             return None
-        # 调用与协议同名的方法
         method = getattr(self, protocol_name)
         if method(protocol):
             self.draw_board()
             return True
 
+    # 游戏运行
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -336,7 +341,6 @@ class Ytz(object):
                         break
                     # 将字节流转成字符串
                     protocol_str = data.decode()
-                    # 处理每一个协议,最后一个是空字符串，不用处理它
                     protocol = json.loads(protocol_str)
                     # 根据协议中的protocol字段，直接调用相应的函数处理
                     self.protocol_handler(protocol)
@@ -348,7 +352,12 @@ class Ytz(object):
                         if protocol:
                             if self.protocol_handler(protocol):
                                 s.send(str(protocol).encode())
-                self.game_over()
+                # else:   # 这一部分会卡死，可直接去掉
+                #     for event in pygame.event.get():
+                #         if event.type == QUIT:
+                #             pygame.quit()
+                #             sys.exit()
+                # self.game_over()
         except:
             s.close()
             logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
