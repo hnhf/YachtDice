@@ -26,7 +26,7 @@ font_30 = pygame.font.Font('./font/simhei.ttf', 30)
 
 
 class Ytz(object):
-    def __init__(self):
+    def __init__(self, name):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load('./images/background.jpg')
@@ -34,7 +34,7 @@ class Ytz(object):
                     pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
                     pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
                     pygame.image.load('./images/6.png')]
-        self.name = '奥驼'  # 玩家昵称
+        self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
         self.player = None  # 当前回合玩家
@@ -217,6 +217,7 @@ class Ytz(object):
 
     # 摇骰子
     def roll_dice(self, protocol):
+        logger.debug(protocol)
         e = protocol['button']
         if protocol['from'] == self.name:
             if e == 'down':
@@ -242,8 +243,10 @@ class Ytz(object):
                 self.count_score()
                 return True
         elif protocol['from'] == 'opponent':
+            logger.debug("opponent_dice :{}".format(protocol['dice']))
             self.dice = protocol['dice']
             self.count_score()
+            return True
 
     # 选择分数
     def record_score(self, protocol):
@@ -316,7 +319,7 @@ class Ytz(object):
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('192.168.31.8', 6666))
+        s.connect(('127.0.0.1', 6666))
         s.setblocking(0)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
@@ -349,5 +352,5 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz()
+    y = Ytz("auto")
     y.run()

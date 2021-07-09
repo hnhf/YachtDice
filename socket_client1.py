@@ -11,6 +11,7 @@ def tcp_send():
         s.send(i.to_bytes(length=2, byteorder='big', signed=False))
         time.sleep(0.2)
 
+
 def tcp_receive():
     pass
 
