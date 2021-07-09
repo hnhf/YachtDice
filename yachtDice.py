@@ -294,7 +294,9 @@ class Ytz(object):
     # 处理登录信息
     def login(self, protocol):
         self.order = protocol.get('order', None)
-        self.opponent = protocol.get('opponent', None)
+        if hasattr(protocol, 'opponent'):
+            self.opponent = protocol['opponent']
+            self.player = [self.name, 'opponent'][self.order]
         return True
 
     def protocol_handler(self, protocol):
@@ -313,7 +315,7 @@ class Ytz(object):
         s.connect(('192.168.31.8', 6666))
         s.setblocking(0)
         # 向服务端发送登录信息
-        login_data = str({"protocol": "login", "player": self.name})
+        login_data = str({"protocol": "login", "name": self.name})
         s.send(login_data.encode())
         try:
             while True:
@@ -331,11 +333,12 @@ class Ytz(object):
                     self.protocol_handler(protocol)
                 except:
                     pass
-                for event in pygame.event.get():
-                    protocol = self.check_event(event)
-                    if protocol:
-                        if self.protocol_handler(protocol):
-                            s.send(str(protocol).encode())
+                if self.player == self.name:
+                    for event in pygame.event.get():
+                        protocol = self.check_event(event)
+                        if protocol:
+                            if self.protocol_handler(protocol):
+                                s.send(str(protocol).encode())
         except:
             s.close()
             logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')

@@ -55,6 +55,7 @@ class Connection:
 
     def __init__(self, client, connections):
         self.socket = client
+        self.name = None
         self.connections = connections
         self.data_handler()
 
@@ -160,16 +161,17 @@ class ProtocolHandler:
 
     @staticmethod
     def login(player, protocol):
-        player_list = []
-        for p in player.connections:
-            if p is not player and p.login_state:
-                player_list.append(p.game_data)
         player.login_state = True
         # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        player.order = len(player_list)
+        player.order = len(player.connections)
+        player.name = protocol['name']
         # 发送登录成功协议
         player.send({"protocol": "login", "order": player.order})
-        player.send_without_self({"protocol": "login", "opponent": protocol['name']})
+        for i in player.connections:
+            if i is not player and i.login_state:
+                i.send({"protocol": "login", "opponent": protocol['name']})
+        if player.order == 1:
+            player.send({"protocol": "login", "opponent": player.connections[0].name})
 
 
 if __name__ == '__main__':
