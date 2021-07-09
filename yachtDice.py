@@ -40,7 +40,7 @@ class Ytz(object):
         self.player = None  # 当前回合玩家
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
-        self.dice = np.zeros(5, dtype=int)  # 当前骰子点数
+        self.dice = [0, 0, 0, 0, 0]  # 当前骰子点数
         self.selected_dice = []  # 选择要摇的骰子
         self.score_now = np.zeros(17, dtype=int)  # 临时显示本次摇骰子的各项分数
         self.score_record = {self.name: {}, "opponent": {}}  # 已经记录的分数
@@ -123,6 +123,7 @@ class Ytz(object):
                          (config.list_x_length + config.list_player_length, config.y_length), 3)
         for k in self.selected_dice:
             pygame.draw.circle(self.screen, config.red, (k * 100 + 50, 50), 50, 3)
+        logger.info('draw_board')
         pygame.display.update()
 
     # 弹出提示
@@ -241,6 +242,7 @@ class Ytz(object):
                 self.roll_time += 1
                 self.selected_dice = []
                 self.count_score()
+                protocol.update({'dice': self.dice})
                 return True
         elif protocol['from'] == 'opponent':
             logger.debug("opponent_dice :{}".format(protocol['dice']))
@@ -277,7 +279,7 @@ class Ytz(object):
                 self.player = self.name if (self.player == 'opponent') else 'opponent'  # 交换玩家
                 self.game_turn += 1  # 回合数+1
                 self.roll_time = 0  # 摇骰子次数变为0
-                self.dice = np.zeros(5, dtype=int)  # 初始化五个骰子
+                self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
                 self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
                 return True
 
@@ -319,7 +321,7 @@ class Ytz(object):
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('127.0.0.1', 6666))
+        s.connect(('192.168.31.8', 6666))
         s.setblocking(0)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
@@ -346,6 +348,7 @@ class Ytz(object):
                         if protocol:
                             if self.protocol_handler(protocol):
                                 s.send(str(protocol).encode())
+                self.game_over()
         except:
             s.close()
             logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
