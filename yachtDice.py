@@ -14,7 +14,6 @@ from pygame.locals import *
 from loguru import logger
 import config
 import socket
-import threading
 from frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
@@ -33,11 +32,11 @@ class Ytz(object):
     def __init__(self, name):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
-        self.bg_picture = pygame.image.load('./images/background.jpg')
-        self.img = [pygame.image.load('./images/0.jpg'), pygame.image.load('./images/1.png'),
-                    pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
-                    pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
-                    pygame.image.load('./images/6.png')]
+        self.bg_picture = pygame.image.load(get_path('images/background.jpg'))
+        self.img = [pygame.image.load(get_path('images/0.jpg')), pygame.image.load(get_path('images/1.png')),
+                    pygame.image.load(get_path('images/2.png')), pygame.image.load(get_path('images/3.png')),
+                    pygame.image.load(get_path('images/4.png')), pygame.image.load(get_path('images/5.png')),
+                    pygame.image.load(get_path('images/6.png'))]
         self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
@@ -242,7 +241,7 @@ class Ytz(object):
                 else:
                     self.draw_board()
                     return
-                pygame.mixer.music.load('./audio/roll_dice.mp3')
+                pygame.mixer.music.load(get_path('audio/roll_dice.mp3'))
                 pygame.mixer.music.play()
                 self.roll_time += 1
                 self.selected_dice = []
@@ -372,5 +371,5 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz("auto")
+    y = Ytz("dama")
     y.run()
