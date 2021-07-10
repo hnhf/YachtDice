@@ -14,15 +14,19 @@ from pygame.locals import *
 from loguru import logger
 import config
 import socket
+import threading
+from frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
-font_roll = pygame.font.Font('./font/simhei.ttf', config.roll_font)
-font_score = pygame.font.Font('./font/simhei.ttf', 20)
-font_player = pygame.font.Font('./font/simhei.ttf', 28)
-font_20 = pygame.font.Font('./font/simhei.ttf', 20)
-font_25 = pygame.font.Font('./font/simhei.ttf', 25)
-font_30 = pygame.font.Font('./font/simhei.ttf', 30)
+font_roll = pygame.font.Font(get_path('font/simhei.ttf'), config.roll_font)
+font_score = pygame.font.Font(get_path('font/simhei.ttf'), 20)
+font_player = pygame.font.Font(get_path('font/simhei.ttf'), 28)
+font_20 = pygame.font.Font(get_path('font/simhei.ttf'), 20)
+font_25 = pygame.font.Font(get_path('font/simhei.ttf'), 25)
+font_30 = pygame.font.Font(get_path('font/simhei.ttf'), 30)
+IP = '112.232.240.231'
+PORT = 6666
 
 
 class Ytz(object):
@@ -130,7 +134,7 @@ class Ytz(object):
     # 弹出提示
     def draw_text(self, text, xx, yy, size):
         pygame.font.init()
-        fontObj = pygame.font.Font('./font/simhei.ttf', size)
+        fontObj = pygame.font.Font(get_path('font/simhei.ttf'), size)
         textSurfaceObj = fontObj.render(text, True, config.white, config.black)
         textRectObj = textSurfaceObj.get_rect()
         textRectObj.center = (xx, yy)
@@ -327,7 +331,7 @@ class Ytz(object):
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('112.232.240.231', 6666))
+        s.connect((IP, PORT))
         s.setblocking(0)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
@@ -368,5 +372,5 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz("DAM")
+    y = Ytz("auto")
     y.run()
