@@ -384,5 +384,7 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz("1")
+    logger.info("请输入昵称:")
+    p_name = input()
+    y = Ytz(p_name)
     y.run()

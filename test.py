@@ -62,7 +62,7 @@ class Ytz(object):
         self.screen.fill(self.bg_color)
         self.screen.blit(self.bg_picture, (0, 100))
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i]], (i * config.dice_length + 10, 0))
+            self.screen.blit(self.img[self.dice[i]], (i * config.dice_length + 10, 10))
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
         # 显示出游戏玩家
@@ -384,5 +384,7 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz("2")
+    logger.info("请输入昵称:")
+    p_name = input()
+    y = Ytz(p_name)
     y.run()
