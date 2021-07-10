@@ -14,7 +14,6 @@ from pygame.locals import *
 from loguru import logger
 import config
 import socket
-import threading
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
@@ -328,7 +327,7 @@ class Ytz(object):
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('192.168.31.8', 6666))
+        s.connect(('112.232.240.231', 6666))
         s.setblocking(0)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
@@ -369,5 +368,5 @@ class Ytz(object):
 
 
 if __name__ == "__main__":
-    y = Ytz("auto")
+    y = Ytz("DAM")
     y.run()

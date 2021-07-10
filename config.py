@@ -1,5 +1,3 @@
-import numpy as np
-
 # 其他参数
 select_range = 30  # 鼠标点击的有效半径
 player_number = 2  # 玩家数量

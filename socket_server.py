@@ -1,10 +1,5 @@
-import datetime
 import json
 import socket
-import threading
-import time
-import traceback
-import uuid
 from threading import Thread
 from loguru import logger
 
@@ -106,11 +101,7 @@ class Player(Connection):
             2.json中必须要有protocol字段，该字段表示协议名称
             登录协议：
                 客户端发送：{"protocol":"login","username":"玩家账号"}
-                服务端返回：
-                    登录成功：
-                        {"protocol":"login","result":true,"order":‘’}
-                    登录失败：
-                        {"protocol":"login","result":false,"msg":"账号或密码错误"}
+                服务端返回：{"protocol":"login","result":true,"order":‘’}
         """
         # 将字节流转成字符串
         event_str = data.decode()
