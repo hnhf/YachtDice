@@ -216,7 +216,7 @@ class Ytz(object):
                 else:
                     self.selected_dice.remove(e)  # 如果e在已选择的骰子中，则去掉e
                     logger.info("remove dice {}".format(e + 1))
-                    return True
+                return True
 
     # 摇骰子
     def roll_dice(self, protocol):
