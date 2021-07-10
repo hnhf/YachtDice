@@ -18,25 +18,26 @@ from frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
+
 font_roll = pygame.font.Font(get_path('font/simhei.ttf'), config.roll_font)
 font_score = pygame.font.Font(get_path('font/simhei.ttf'), 20)
 font_player = pygame.font.Font(get_path('font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('font/simhei.ttf'), 30)
-IP = '112.232.240.231'
-PORT = 6666
 
 
 class Ytz(object):
-    def __init__(self, name):
+    def __init__(self, name, ip):
+        self.IP = ip
+        self.play_music(get_path('audio/caromhall.mp3'), 0.3, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load(get_path('images/background.jpg'))
-        self.img = [pygame.image.load(get_path('images/0.jpg')), pygame.image.load(get_path('images/1.png')),
-                    pygame.image.load(get_path('images/2.png')), pygame.image.load(get_path('images/3.png')),
-                    pygame.image.load(get_path('images/4.png')), pygame.image.load(get_path('images/5.png')),
-                    pygame.image.load(get_path('images/6.png'))]
+        self.img = [pygame.image.load(get_path('images/0.jpg')), pygame.image.load(get_path('images/01.png')),
+                    pygame.image.load(get_path('images/02.png')), pygame.image.load(get_path('images/03.png')),
+                    pygame.image.load(get_path('images/04.png')), pygame.image.load(get_path('images/05.png')),
+                    pygame.image.load(get_path('images/06.png'))]
         self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
@@ -62,7 +63,7 @@ class Ytz(object):
         self.screen.fill(self.bg_color)
         self.screen.blit(self.bg_picture, (0, 100))
         for i in range(5):
-            self.screen.blit(self.img[self.dice[i]], (i * config.dice_length, 0))
+            self.screen.blit(self.img[self.dice[i]], (i * config.dice_length + 10, 10))
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
         # 显示出游戏玩家
@@ -126,18 +127,19 @@ class Ytz(object):
                          (config.list_x_length + config.list_player_length, config.dice_length),
                          (config.list_x_length + config.list_player_length, config.y_length), 3)
         for k in self.selected_dice:
-            pygame.draw.circle(self.screen, config.red, (k * 100 + 50, 50), 50, 3)
-        logger.info('draw_board')
+            # pygame.draw.rect(self.screen, config.red, (k * 100 + 50, 50), 50, 3)
+            pygame.draw.rect(self.screen, config.red, [k * 100 + 5, 5, 90, 90], 3)
+        logger.debug('draw_board')
         pygame.display.update()
 
     # 弹出提示
     def draw_text(self, text, xx, yy, size):
         pygame.font.init()
-        fontObj = pygame.font.Font(get_path('font/simhei.ttf'), size)
-        textSurfaceObj = fontObj.render(text, True, config.white, config.black)
-        textRectObj = textSurfaceObj.get_rect()
-        textRectObj.center = (xx, yy)
-        self.screen.blit(textSurfaceObj, textRectObj)
+        font_obj = pygame.font.Font(get_path('font/simhei.ttf'), size)
+        text_surface_obj = font_obj.render(text, True, config.white, config.black)
+        text_rect_obj = text_surface_obj.get_rect()
+        text_rect_obj.center = (xx, yy)
+        self.screen.blit(text_surface_obj, text_rect_obj)
         pygame.display.update()
 
     # 检查事件，一个返回字典
@@ -214,10 +216,10 @@ class Ytz(object):
             if 0 < self.roll_time < 3:
                 if e not in self.selected_dice:  # 如果e不在已选择的骰子中，则加入e
                     self.selected_dice.append(e)
-                    logger.info('select dice {}'.format(e + 1))
+                    logger.debug('select dice {}'.format(e + 1))
                 else:
                     self.selected_dice.remove(e)  # 如果e在已选择的骰子中，则去掉e
-                    logger.info("remove dice {}".format(e + 1))
+                    logger.debug("remove dice {}".format(e + 1))
                 return True
 
     # 摇骰子
@@ -241,8 +243,7 @@ class Ytz(object):
                 else:
                     self.draw_board()
                     return
-                pygame.mixer.music.load(get_path('audio/roll_dice.mp3'))
-                pygame.mixer.music.play()
+                self.play_music(get_path('audio/roll_dice.mp3'), 1, 1)
                 self.roll_time += 1
                 self.selected_dice = []
                 self.count_score()
@@ -309,9 +310,10 @@ class Ytz(object):
     # 处理登录信息
     def login(self, protocol):
         if 'order' in protocol:
-            logger.info('order:{}'.format(protocol['order']))
+            logger.info('当前:{}'.format(protocol['order']))
             self.order = protocol.get('order', None)
         if 'opponent' in protocol:
+            logger.info('对战:{}'.format(protocol['order']))
             self.opponent = protocol['opponent']
             self.player = [self.name, 'opponent'][self.order]
         return True
@@ -326,12 +328,19 @@ class Ytz(object):
             self.draw_board()
             return True
 
+    @staticmethod
+    def play_music(path, volume, time):
+        logger.debug('play music:{} {} time'.format(path, "∞" if time == -1 else time))
+        music = pygame.mixer.Sound(get_path(path))
+        music.set_volume(volume)
+        music.play(time, 0, 0)
+
     # 游戏运行
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((IP, PORT))
-        s.setblocking(0)
+        s.connect((self.IP, 6666))
+        s.setblocking(False)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
         s.send(login_data.encode())
@@ -367,9 +376,13 @@ class Ytz(object):
                 self.game_over()
         except:
             s.close()
-            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+            logger.info('游戏退出')
 
 
 if __name__ == "__main__":
-    y = Ytz("dama")
+    logger.info("请输入昵称:")
+    p_name = input()
+    logger.info("请输入IP:")
+    s_ip = input()
+    y = Ytz(p_name, s_ip)
     y.run()
