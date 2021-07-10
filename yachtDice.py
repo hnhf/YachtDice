@@ -15,26 +15,29 @@ from loguru import logger
 import config
 import socket
 import threading
+from frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
-font_roll = pygame.font.Font('./font/simhei.ttf', config.roll_font)
-font_score = pygame.font.Font('./font/simhei.ttf', 20)
-font_player = pygame.font.Font('./font/simhei.ttf', 28)
-font_20 = pygame.font.Font('./font/simhei.ttf', 20)
-font_25 = pygame.font.Font('./font/simhei.ttf', 25)
-font_30 = pygame.font.Font('./font/simhei.ttf', 30)
+font_roll = pygame.font.Font(get_path('font/simhei.ttf'), config.roll_font)
+font_score = pygame.font.Font(get_path('font/simhei.ttf'), 20)
+font_player = pygame.font.Font(get_path('font/simhei.ttf'), 28)
+font_20 = pygame.font.Font(get_path('font/simhei.ttf'), 20)
+font_25 = pygame.font.Font(get_path('font/simhei.ttf'), 25)
+font_30 = pygame.font.Font(get_path('font/simhei.ttf'), 30)
+IP = '112.232.240.231'
+PORT = 6666
 
 
 class Ytz(object):
     def __init__(self, name):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
-        self.bg_picture = pygame.image.load('./images/background.jpg')
-        self.img = [pygame.image.load('./images/0.jpg'), pygame.image.load('./images/1.png'),
-                    pygame.image.load('./images/2.png'), pygame.image.load('./images/3.png'),
-                    pygame.image.load('./images/4.png'), pygame.image.load('./images/5.png'),
-                    pygame.image.load('./images/6.png')]
+        self.bg_picture = pygame.image.load(get_path('images/background.jpg'))
+        self.img = [pygame.image.load(get_path('images/0.jpg')), pygame.image.load(get_path('images/1.png')),
+                    pygame.image.load(get_path('images/2.png')), pygame.image.load(get_path('images/3.png')),
+                    pygame.image.load(get_path('images/4.png')), pygame.image.load(get_path('images/5.png')),
+                    pygame.image.load(get_path('images/6.png'))]
         self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
@@ -131,7 +134,7 @@ class Ytz(object):
     # 弹出提示
     def draw_text(self, text, xx, yy, size):
         pygame.font.init()
-        fontObj = pygame.font.Font('./font/simhei.ttf', size)
+        fontObj = pygame.font.Font(get_path('font/simhei.ttf'), size)
         textSurfaceObj = fontObj.render(text, True, config.white, config.black)
         textRectObj = textSurfaceObj.get_rect()
         textRectObj.center = (xx, yy)
@@ -239,7 +242,7 @@ class Ytz(object):
                 else:
                     self.draw_board()
                     return
-                pygame.mixer.music.load('./audio/roll_dice.mp3')
+                pygame.mixer.music.load('/audio/roll_dice.mp3')
                 pygame.mixer.music.play()
                 self.roll_time += 1
                 self.selected_dice = []
@@ -328,7 +331,7 @@ class Ytz(object):
     def run(self):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('192.168.31.8', 6666))
+        s.connect((IP, PORT))
         s.setblocking(0)
         # 向服务端发送登录信息
         login_data = str({"protocol": "login", "name": self.name})
