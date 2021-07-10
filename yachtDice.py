@@ -249,14 +249,16 @@ class Ytz(object):
         elif protocol['from'] == 'opponent':
             logger.debug("opponent_dice :{}".format(protocol['dice']))
             self.dice = protocol['dice']
-            self.count_score()
             self.roll_time += 1
+            self.selected_dice = []
+            self.count_score()
             return True
 
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
-        if (protocol['from'] == self.name) and (self.order*17 + 5 < e < self.order*17 + 23) or protocol['from'] == 'opponent':
+        if (protocol['from'] == self.name) and (self.order * 17 + 5 < e < self.order * 17 + 23) or protocol[
+            'from'] == 'opponent':
             if self.roll_time != 0:
                 i = e - 6 if e < 23 else e - 23
                 if not self.score_record[self.player][i]["recorded"]:
@@ -322,10 +324,19 @@ class Ytz(object):
             self.draw_board()
             return True
 
-    def recv_data(self, s):
-        logger.info('thread recv_data begin')
+    # 游戏运行
+    def run(self):
+        # 建立socket连接
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('192.168.31.8', 6666))
+        s.setblocking(0)
+        # 向服务端发送登录信息
+        login_data = str({"protocol": "login", "name": self.name})
+        s.send(login_data.encode())
+
         try:
             while True:
+                try:
                     data = s.recv(4096)  # 只做粘包不做分包处理。
                     if len(data) == 0:
                         logger.info('有玩家离线')
@@ -336,68 +347,25 @@ class Ytz(object):
                     protocol = json.loads(protocol_str)
                     # 根据协议中的protocol字段，直接调用相应的函数处理
                     self.protocol_handler(protocol)
+                except:
+                    pass
+                if self.player == self.name:
+                    for event in pygame.event.get():
+                        protocol = self.check_event(event)
+                        if protocol:
+                            if self.protocol_handler(protocol):
+                                s.send(str(protocol).encode())
+                elif self.player and self.player != self.name:
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if self.player == self.name:
+                            break
+                self.game_over()
         except:
             s.close()
             logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
-
-    def local_data(self, s):
-        logger.info('thread local_data begin')
-        for event in pygame.event.get():
-            if self.player == self.name:
-                protocol = self.check_event(event)
-                if protocol:
-                    if self.protocol_handler(protocol):
-                        s.send(str(protocol).encode())
-            else:   # 这一部分会卡死，可直接去掉
-                if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-            self.game_over()
-
-    # 游戏运行
-    def run(self):
-        # 建立socket连接
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('192.168.31.8', 6666))
-        # s.setblocking(0)
-        # 向服务端发送登录信息
-        login_data = str({"protocol": "login", "name": self.name})
-        s.send(login_data.encode())
-        thread_recv = threading.Thread(target=self.recv_data(s))
-        thread_local = threading.Thread(target=self.local_data(s))
-        for thread in [thread_recv, thread_local]:
-            thread.start()
-
-        # try:
-        #     while True:
-        #         try:
-        #             data = s.recv(4096)  # 只做粘包不做分包处理。
-        #             if len(data) == 0:
-        #                 logger.info('有玩家离线')
-        #                 s.close()
-        #                 break
-        #             # 将字节流转成字符串
-        #             protocol_str = data.decode()
-        #             protocol = json.loads(protocol_str)
-        #             # 根据协议中的protocol字段，直接调用相应的函数处理
-        #             self.protocol_handler(protocol)
-        #         except:
-        #             pass
-        #         if self.player == self.name:
-        #             for event in pygame.event.get():
-        #                 protocol = self.check_event(event)
-        #                 if protocol:
-        #                     if self.protocol_handler(protocol):
-        #                         s.send(str(protocol).encode())
-        #         # else:   # 这一部分会卡死，可直接去掉
-        #         #     for event in pygame.event.get():
-        #         #         if event.type == QUIT:
-        #         #             pygame.quit()
-        #         #             sys.exit()
-        #         # self.game_over()
-        # except:
-        #     s.close()
-        #     logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 if __name__ == "__main__":
