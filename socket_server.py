@@ -76,7 +76,7 @@ class Connection:
         except:
             # self.socket.close()
             self.connections.remove(self)
-            logger.error('{}玩家发送的数据异常：{},已强制下线'.format(self.name, data.decode()))
+            logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
     def deal_data(self, data):
         """
@@ -152,12 +152,14 @@ class ProtocolHandler:
 
     @staticmethod
     def login(player, protocol):
+        player.login_state = True
+        # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
         player.order = len(player.connections) - 1
         player.name = protocol['name']
         # 发送登录成功协议
         player.send({"protocol": "login", "order": player.order})
         for i in player.connections:
-            if i is not player:
+            if i is not player and i.login_state:
                 i.send({"protocol": "login", "opponent": protocol['name']})
         if player.order == 1:
             player.send({"protocol": "login", "opponent": player.connections[0].name})
