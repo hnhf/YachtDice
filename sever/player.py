@@ -56,7 +56,8 @@ class Player(Connection):
 
     def __init__(self, *args):
         self.login_state = False  # 登录状态
-        self.order = None  # 玩家游戏中的相关数据
+        self.order = None
+        self.location = dict()  # 玩家游戏中的相关数据
         self.protocol_handler = ProtocolHandler()  # 协议处理对象
         super().__init__(*args)
 

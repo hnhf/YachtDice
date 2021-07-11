@@ -12,7 +12,7 @@ class Room:
             return False
         self.players.append(player)
         self.player_location.append({"player": player.name, "location": player_num})
-        return True
+        return {"player": player.name, "location": player_num}
 
     def remove_player(self, player):
         if player in self.players:

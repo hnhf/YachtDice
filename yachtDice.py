@@ -7,6 +7,8 @@ import json
 import random
 import math
 import sys
+from time import sleep
+
 import numpy as np
 import pygame
 from pygame.locals import *
@@ -14,6 +16,7 @@ from loguru import logger
 from conf import config
 import socket
 from tools.frozen import get_path
+from threading import Thread
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
@@ -25,10 +28,13 @@ font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
 IP = '112.232.240.231'
 PORT = 6666
+# 建立socket连接
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((IP, PORT))
 
 
 class Ytz(object):
-    def __init__(self, name):
+    def __init__(self, name, room):
         self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
@@ -59,6 +65,8 @@ class Ytz(object):
             self.score_record[self.name][j]["recorded"] = True
             self.score_record["opponent"][j]["recorded"] = True
         self.login_state = False
+        self.room = room
+        self.location = None
 
     # 画出游戏界面
     def draw_board(self):
@@ -311,7 +319,7 @@ class Ytz(object):
     # 处理登录信息
     def login(self, s):
         logger.info("登录中...")
-        protocol = str({"protocol": "login", "name": self.name, "room_num": 4396})
+        protocol = str({"protocol": "login", "name": self.name, "room_num": self.room})
         s.send(protocol.encode())
         data = s.recv(4096)
         rec_protocol = json.loads(data.decode())
@@ -325,6 +333,7 @@ class Ytz(object):
             if 'opponent' in rec_protocol:
                 self.opponent = rec_protocol['opponent']
                 self.player = [self.name, 'opponent'][self.order]
+            self.login_state = True
         else:
             logger.info("登录失败")
             self.login_state = False
@@ -348,50 +357,57 @@ class Ytz(object):
             self.draw_board()
             return True
 
-    # 游戏运行
-    def run(self):
-        # 建立socket连接
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((IP, PORT))
+    def recv_data(self):
+        while True:
+            if self.login_state:
+                try:
+                    data = s.recv(4096)  # 只做粘包不做分包处理。
+                    if len(data) == 0:
+                        logger.info('有玩家离线')
+                        s.close()
+                        break
+                    self.call_method(data)
+                    # 将字节流转成字符串
+                except BlockingIOError:
+                    pass
+
+    def send_data(self):
         # 向服务端发送登录信息
         self.login(s)
+        # try:
+        #     if self.player == self.name:
+        #         for event in pygame.event.get():
+        #             protocol = self.check_event(event)
+        #             if protocol:
+        #                 if self.call_method(protocol):
+        #                     s.send(str(protocol).encode())
+        #     elif self.player and self.player != self.name:
+        #         for event in pygame.event.get():
+        #             if event.type == QUIT:
+        #                 pygame.quit()
+        #                 sys.exit()
+        #             if self.player == self.name:
+        #                 break
+        #     else:
+        #         self.draw_board()
+        #     self.game_over()
+        # except ConnectionResetError:
+        #     s.close()
+        #     logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
-        if self.login_state:
-            try:
-                while True:
-                    try:
-                        data = s.recv(4096)  # 只做粘包不做分包处理。
-                        if len(data) == 0:
-                            logger.info('有玩家离线')
-                            s.close()
-                            break
-                        self.call_method(data)
-                        # 将字节流转成字符串
-                    except BlockingIOError:
-                        pass
-                    if self.player == self.name:
-                        for event in pygame.event.get():
-                            protocol = self.check_event(event)
-                            if protocol:
-                                if self.call_method(protocol):
-                                    s.send(str(protocol).encode())
-                    elif self.player and self.player != self.name:
-                        for event in pygame.event.get():
-                            if event.type == QUIT:
-                                pygame.quit()
-                                sys.exit()
-                            if self.player == self.name:
-                                break
-                    else:
-                        self.draw_board()
-                    self.game_over()
-            except ConnectionResetError:
-                s.close()
-                logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+
+def main():
+    logger.info("请输入昵称:")
+    p_name = input()
+    logger.info("请输入房间号:")
+    s_room = input()
+    y = Ytz(p_name, s_room)
+    threads = list()
+    threads.append(Thread(target=y.send_data))
+    # threads.append(Thread(target=y.recv_data))
+    for thread in threads:
+        thread.start()
 
 
 if __name__ == "__main__":
-    logger.info("请输入昵称:")
-    p_name = input()
-    y = Ytz(p_name)
-    y.run()
+    main()
