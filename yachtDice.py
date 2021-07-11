@@ -65,7 +65,7 @@ class Ytz(object):
             self.score_record[self.name][j]["recorded"] = True
             self.score_record["opponent"][j]["recorded"] = True
         self.login_state = False
-        self.room = room
+        self.room_num = room
         self.location = None
 
     # 画出游戏界面
@@ -323,8 +323,10 @@ class Ytz(object):
         s.send(protocol.encode())
         data = s.recv(4096)
         rec_protocol = json.loads(data.decode())
-        if json.loads(data.decode())['login_state']:
+        if rec_protocol['login_state']:
             logger.info("登录成功")
+            self.location = rec_protocol['location']
+            self.room_num = rec_protocol['room_num']
             s.setblocking(False)
             self.login_state = True
             if 'order' in rec_protocol:
