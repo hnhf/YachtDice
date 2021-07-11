@@ -29,8 +29,10 @@ class Server:
             client, _ = self.listener.accept()  # 阻塞，等待客户端连接
             user = self.__user_cls(client, self.connections)
             self.connections.append(user)
-
-            logger.info('有新连接进入，当前连接数：{}'.format(len(self.connections)))
+            c = self.connections[-1]
+            logger.debug('connection 初始化 {}'.format(c.name))
+            logger.info('新玩家{}进入，IP:{}'.format(c.name, client.getpeername()[0]))
+            logger.info('当前玩家数{}，{}'.format(len(self.connections), [con.name for con in self.connections]))
 
     @classmethod
     def register_cls(cls, sub_cls):
@@ -73,10 +75,10 @@ class Connection:
                     break
                 # 处理数据
                 self.deal_data(data)
-        except:
+        except ConnectionResetError:
             # self.socket.close()
             self.connections.remove(self)
-            logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+            logger.warning('{}玩家数据异常,退出！{}'.format(self.name, data.decode()))
 
     def deal_data(self, data):
         """
@@ -157,7 +159,7 @@ class ProtocolHandler:
         player.order = len(player.connections) - 1
         player.name = protocol['name']
         # 发送登录成功协议
-        player.send({"protocol": "login", "order": player.order})
+        player.send({"protocol": "login", "order": player.order, 'login_state': True})
         for i in player.connections:
             if i is not player and i.login_state:
                 i.send({"protocol": "login", "opponent": protocol['name']})
