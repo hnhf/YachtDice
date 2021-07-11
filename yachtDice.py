@@ -131,7 +131,6 @@ class Ytz(object):
                          (config.list_x_length + config.list_player_length, config.y_length), 3)
         for k in self.selected_dice:
             pygame.draw.rect(self.screen, config.red, [k * 100 + 5, 5, 90, 90], 3)
-        logger.info('draw_board')
         pygame.display.update()
 
     # 弹出提示
@@ -310,15 +309,15 @@ class Ytz(object):
                         sys.exit()
 
     # 处理登录信息
-    def login(self, l_socket):
+    def login(self, s):
         logger.info("登录中...")
         protocol = str({"protocol": "login", "name": self.name, "room_num": 4396})
-        l_socket.send(protocol.encode())
-        data = l_socket.recv(4096)
+        s.send(protocol.encode())
+        data = s.recv(4096)
         rec_protocol = json.loads(data.decode())
         if json.loads(data.decode())['login_state']:
             logger.info("登录成功")
-            l_socket.setblocking(False)
+            s.setblocking(False)
             self.login_state = True
             if 'order' in rec_protocol:
                 logger.info('order:{}'.format(rec_protocol['order']))
@@ -383,6 +382,8 @@ class Ytz(object):
                                 sys.exit()
                             if self.player == self.name:
                                 break
+                    else:
+                        self.draw_board()
                     self.game_over()
             except ConnectionResetError:
                 s.close()

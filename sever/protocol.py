@@ -29,6 +29,7 @@ class ProtocolHandler:
             new_room = Room(room_num)
             if new_room.add_player(player):
                 server.rooms.append(new_room)
+                player.room = new_room
                 logger.info("创建房间{}成功".format(room_num))
             else:
                 logger.info("创建房间{}失败".format(room_num))

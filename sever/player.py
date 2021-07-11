@@ -15,7 +15,7 @@ class Connection:
         self.server = server
         self.socket = client
         self.name = None
-        self.rooms = []
+        self.room = None
         self.room_num = None
         self.connections = connections
         self.data_handler()
@@ -42,7 +42,8 @@ class Connection:
         except ConnectionResetError:
             # self.socket.close()
             self.connections.remove(self)
-            logger.warning('{}玩家数据异常,退出！{}'.format(self.name, data.decode()))
+            self.room.remove_player(self)
+            logger.warning('{}玩家数据异常,退出房间：{}'.format(self.name, self.room.num))
 
     def deal_data(self, data):
         """

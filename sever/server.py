@@ -1,6 +1,8 @@
 import socket
-from loguru import logger
+from time import sleep
 
+from loguru import logger
+from threading import Thread
 from sever.player import Connection, Player
 
 
@@ -30,7 +32,29 @@ class Server:
             logger.info('新连接进入，IP:{}'.format(client.getpeername()[0]))
             logger.info('当前玩家数{}'.format(len(self.connections)))
 
+    def clean_room(self):
+        while True:
+            for room in self.rooms:
+                if len(room.players) == 0:
+                    self.rooms.remove(room)
+                    logger.debug("删除空闲房间{}".format(room.num))
+
+    def info(self):
+        while True:
+            sleep(60)
+            logger.info("玩家列表:{}".format([conn.name for conn in self.connections]))
+            logger.info("房间列表:{}".format([room.num for room in self.rooms]))
+
+
+def main():
+    server = Server('192.168.3.4', 6666)
+    threads = list()
+    threads.append(Thread(target=server.run))
+    threads.append(Thread(target=server.clean_room))
+    threads.append(Thread(target=server.info))
+    for thread in threads:
+        thread.start()
+
 
 if __name__ == '__main__':
-    server = Server('192.168.3.4', 6666)
-    server.run()
+    main()
