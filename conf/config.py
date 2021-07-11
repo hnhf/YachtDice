@@ -9,8 +9,7 @@ list_y_length = 36
 list_x_length = 200
 x_length = dice_length * 5 + roll_length
 y_length = dice_length + list_y_length * 18
-list_player_length = (x_length - list_x_length) / 2
-
+list_player_length = (x_length - list_x_length)
 
 # 字体大小和位置
 roll_font = 58
@@ -18,7 +17,9 @@ score_font = 20
 roll_position = (dice_length * 5 + roll_length / 2 - roll_font / 2, roll_length / 2 - roll_font / 2 - roll_length / 10)
 roll_circle_position = (dice_length * 5 + roll_length / 2, roll_length / 2 - roll_length / 10)
 roll_circle_radius = 30
-
+player_location2 = [(x_length - list_x_length) / 4, (x_length - list_x_length) * 3 / 4]
+player_location3 = [(x_length - list_x_length) / 6, (x_length - list_x_length) / 2, (x_length - list_x_length) * 5 / 6]
+locations = [player_location2, player_location3]
 
 # 颜色
 black = (0, 0, 0)

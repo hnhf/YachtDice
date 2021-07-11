@@ -48,74 +48,69 @@ class Ytz(object):
                     pygame.image.load(get_path('resource/images/06.png'))]
         self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
-        self.opponent = None  # 对手玩家
         self.player = None  # 当前回合玩家
+        self.login_state = False
+        self.room_num = room
+        self.player_list = None
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
         self.dice = [0, 0, 0, 0, 0]  # 当前骰子点数
         self.selected_dice = []  # 选择要摇的骰子
         self.score_now = np.zeros(17, dtype=int)  # 临时显示本次摇骰子的各项分数
-        self.score_record = {self.name: {}, "opponent": {}}  # 已经记录的分数
+        self.score_record = {self.name: {}, "opponent1": {}, "opponent2": {}}  # 已经记录的分数
         for i in range(17):  # 创建dict对象来记录两位玩家的分数，False表示未计分
             self.score_record[self.name].update(
                 {i: {"score": 0, "recorded": False}})
-            self.score_record["opponent"].update(
+            self.score_record["opponent1"].update(
+                {i: {"score": 0, "recorded": False}})
+            self.score_record["opponent2"].update(
                 {i: {"score": 0, "recorded": False}})
         for j in [7, 15, 16]:  # 对于Bonus和总分项不需要点击登记，而是实时计算
             self.score_record[self.name][j]["recorded"] = True
-            self.score_record["opponent"][j]["recorded"] = True
-        self.login_state = False
-        self.room_num = room
-        self.location = None
+            self.score_record["opponent1"][j]["recorded"] = True
+            self.score_record["opponent2"][j]["recorded"] = True
 
     # 画出游戏界面
     def draw_board(self):
+
         # 显示出五个骰子和摇骰子按钮
         self.screen.fill(self.bg_color)
         self.screen.blit(self.bg_picture, (0, 100))
         for i in range(5):
             self.screen.blit(self.img[self.dice[i]], (i * config.dice_length + 10, 10))
+        for k in self.selected_dice:
+            pygame.draw.rect(self.screen, config.red, [k * 100 + 5, 5, 90, 90], 3)
         pygame.draw.circle(self.screen, config.gray, config.roll_circle_position, 2 * config.roll_font / 3)
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
+
         # 显示出游戏玩家
+        player_num = len(self.player_list)
+        player_location = config.locations[player_num]
         self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
                          (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
-        if self.player == self.name:
-            player_color = [config.red, config.black]
-        else:
-            player_color = [config.black, config.red]
-        if self.order == 0:
-            player_location = [config.player_1_location, config.player_2_location]
-        else:
-            player_location = [config.player_2_location, config.player_1_location]
-        self.screen.blit(font_player.render(self.name, True, player_color[0]),
-                         (player_location[0] - 30, config.dice_length + 5))
-        self.screen.blit(font_player.render(self.opponent, True, player_color[1]),
-                         (player_location[1] - 30, config.dice_length + 5))
-        # 显示出各项分数
-        score_location = [config.player_1_location, config.player_2_location]
-        for player, data in self.score_record.items():
+        player_color = []
+        for player, order in self.player_list.items:
             if player == self.player:
-                i = 0 if self.player == self.name and self.order == 0 or self.player != self.name and self.order == 1 else 1
-                for key, value in data.items():
-                    if self.score_record[player][key]["recorded"]:
-                        single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
-                                                         config.black)
-                        self.screen.blit(single_score, (score_location[i],
-                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
-                    if not self.score_record[player][key]["recorded"]:
-                        single_score = font_score.render(str(self.score_now[key]), True, config.gray)
-                        self.screen.blit(single_score, (score_location[i],
-                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
+                player_color.append(config.red)
             else:
-                i = 1 if self.player == self.name and self.order == 0 or self.player != self.name and self.order == 1 else 0
-                for key, value in data.items():
-                    if self.score_record[player][key]["recorded"]:
-                        single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
-                                                         config.black)
-                        self.screen.blit(single_score, (score_location[i],
-                                                        config.dice_length + config.list_y_length + config.score_font / 2 + key * config.list_y_length))
+                player_color.append(config.black)
+
+        # 显示出各项分数
+        for player, order in self.player_list.items():
+            self.screen.blit(font_player.render(player, True, player_color[order]),
+                             (player_location[order] - 30, config.dice_length + 5))
+            for key, value in self.score_record[player].items():
+                if self.score_record[player][key]["recorded"]:
+                    single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
+                                                     config.black)
+                    self.screen.blit(single_score, (player_location[order], config.dice_length + config.list_y_length +
+                                                    config.score_font / 2 + key * config.list_y_length))
+                if player == self.player and not self.score_record[player][key]["recorded"]:
+                    single_score = font_score.render(str(self.score_now[key]), True, config.gray)
+                    self.screen.blit(single_score, (player_location[order], config.dice_length + config.list_y_length +
+                                                    config.score_font / 2 + key * config.list_y_length))
+
         # 显示出屏幕左边的得分列表
         for j in range(17):
             if j == 7 or j == 15:
@@ -127,18 +122,19 @@ class Ytz(object):
             else:
                 score_list = font_20.render(config.score_list[j], True, config.black)
                 self.screen.blit(score_list, (80, 8 + config.dice_length + (j + 1) * config.list_y_length))
-        # 用直线将各项分隔开
+
+        # 用横线将各项分数分隔开
         for i in range(18):
             pygame.draw.line(self.screen, config.black, (0, config.dice_length + config.list_y_length * i),
                              (config.x_length, config.dice_length + config.list_y_length * i), 2)
         pygame.draw.line(self.screen, config.black, (config.list_x_length, config.dice_length),
                          (config.list_x_length, config.y_length),
                          3)
-        pygame.draw.line(self.screen, config.black,
-                         (config.list_x_length + config.list_player_length, config.dice_length),
-                         (config.list_x_length + config.list_player_length, config.y_length), 3)
-        for k in self.selected_dice:
-            pygame.draw.rect(self.screen, config.red, [k * 100 + 5, 5, 90, 90], 3)
+        # 根据玩家数量用竖线把各玩家分数隔开
+        for i in range(player_num - 1):
+            pygame.draw.line(self.screen, config.black,
+                         (config.list_x_length + i * config.list_player_length / (i + 1), config.dice_length),
+                         (config.list_x_length + i * config.list_player_length / (i + 1), config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
