@@ -1,48 +1,9 @@
 import json
-import socket
 from threading import Thread
+
 from loguru import logger
 
-
-class Server:
-    """
-    服务端主类
-    """
-    __user_cls = None
-
-    def __init__(self, ip, port):
-        self.connections = []  # 所有客户端连接
-        logger.info('服务器启动中，请稍候...')
-        try:
-            self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 监听者，用于接收新的socket连接
-            self.listener.bind((ip, port))  # 绑定ip、端口
-            self.listener.listen(5)  # 最大等待数
-        except:
-            logger.info('服务器启动失败，请检查ip端口是否被占用。详细原因请查看日志文件')
-
-        if self.__user_cls is None:
-            logger.info('服务器启动失败，未注册用户自定义类')
-            return
-
-        logger.info('服务器启动成功：{}:{}'.format(ip, port))
-        while True:
-            client, _ = self.listener.accept()  # 阻塞，等待客户端连接
-            user = self.__user_cls(client, self.connections)
-            self.connections.append(user)
-            c = self.connections[-1]
-            logger.debug('connection 初始化 {}'.format(c.name))
-            logger.info('新玩家{}进入，IP:{}'.format(c.name, client.getpeername()[0]))
-            logger.info('当前玩家数{}，{}'.format(len(self.connections), [con.name for con in self.connections]))
-
-    @classmethod
-    def register_cls(cls, sub_cls):
-        """
-        注册玩家的自定义类
-        """
-        if not issubclass(sub_cls, Connection):
-            logger.info('注册用户自定义类失败，类型不匹配')
-            return
-        cls.__user_cls = sub_cls
+from sever.protocol import ProtocolHandler
 
 
 class Connection:
@@ -50,9 +11,12 @@ class Connection:
     连接类，每个socket连接都是一个connection
     """
 
-    def __init__(self, client, connections):
+    def __init__(self, server, client, connections):
+        self.server = server
         self.socket = client
         self.name = None
+        self.rooms = []
+        self.room_num = None
         self.connections = connections
         self.data_handler()
 
@@ -87,7 +51,6 @@ class Connection:
         raise NotImplementedError
 
 
-@Server.register_cls
 class Player(Connection):
 
     def __init__(self, *args):
@@ -135,37 +98,3 @@ class Player(Connection):
         for player in self.connections:
             if player is not self and player.login_state:
                 player.send(py_obj)
-
-
-class ProtocolHandler:
-    """
-    处理客户端返回过来的数据协议
-    """
-
-    def __call__(self, player, protocol):
-        protocol_name = protocol['protocol']
-        if not hasattr(self, protocol_name):
-            player.send_without_self(protocol)
-            return
-        # 调用与协议同名的方法
-        method = getattr(self, protocol_name)
-        result = method(player, protocol)
-        return result
-
-    @staticmethod
-    def login(player, protocol):
-        player.login_state = True
-        # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        player.order = len(player.connections) - 1
-        player.name = protocol['name']
-        # 发送登录成功协议
-        player.send({"protocol": "login", "order": player.order, 'login_state': True})
-        for i in player.connections:
-            if i is not player and i.login_state:
-                i.send({"protocol": "login", "opponent": protocol['name']})
-        if player.order == 1:
-            player.send({"protocol": "login", "opponent": player.connections[0].name})
-
-
-if __name__ == '__main__':
-    server = Server('192.168.3.4', 6666)

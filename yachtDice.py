@@ -11,32 +11,35 @@ import numpy as np
 import pygame
 from pygame.locals import *
 from loguru import logger
-import config
+from conf import config
 import socket
-from frozen import get_path
+from tools.frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
-font_roll = pygame.font.Font(get_path('font/simhei.ttf'), config.roll_font)
-font_score = pygame.font.Font(get_path('font/simhei.ttf'), 20)
-font_player = pygame.font.Font(get_path('font/simhei.ttf'), 28)
-font_20 = pygame.font.Font(get_path('font/simhei.ttf'), 20)
-font_25 = pygame.font.Font(get_path('font/simhei.ttf'), 25)
-font_30 = pygame.font.Font(get_path('font/simhei.ttf'), 30)
+font_roll = pygame.font.Font(get_path('resource/font/simhei.ttf'), config.roll_font)
+font_score = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
+font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
+font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
+font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
+font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
 IP = '112.232.240.231'
 PORT = 6666
 
 
 class Ytz(object):
     def __init__(self, name):
-        self.play_music(get_path('audio/caromhall.mp3'), 0.3, -1)
+        self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
-        self.bg_picture = pygame.image.load(get_path('images/background.jpg'))
-        self.img = [pygame.image.load(get_path('images/0.jpg')), pygame.image.load(get_path('images/01.png')),
-                    pygame.image.load(get_path('images/02.png')), pygame.image.load(get_path('images/03.png')),
-                    pygame.image.load(get_path('images/04.png')), pygame.image.load(get_path('images/05.png')),
-                    pygame.image.load(get_path('images/06.png'))]
+        self.bg_picture = pygame.image.load(get_path('resource/images/background.jpg'))
+        self.img = [pygame.image.load(get_path('resource/images/0.jpg')), pygame.image.load(get_path(
+            'resource/images/01.png')),
+                    pygame.image.load(get_path('resource/images/02.png')), pygame.image.load(get_path(
+                'resource/images/03.png')),
+                    pygame.image.load(get_path('resource/images/04.png')), pygame.image.load(get_path(
+                'resource/images/05.png')),
+                    pygame.image.load(get_path('resource/images/06.png'))]
         self.name = name  # 玩家昵称
         self.order = None  # 玩家顺序
         self.opponent = None  # 对手玩家
@@ -55,6 +58,7 @@ class Ytz(object):
         for j in [7, 15, 16]:  # 对于Bonus和总分项不需要点击登记，而是实时计算
             self.score_record[self.name][j]["recorded"] = True
             self.score_record["opponent"][j]["recorded"] = True
+        self.login_state = False
 
     # 画出游戏界面
     def draw_board(self):
@@ -133,7 +137,7 @@ class Ytz(object):
     # 弹出提示
     def draw_text(self, text, xx, yy, size):
         pygame.font.init()
-        fontObj = pygame.font.Font(get_path('font/simhei.ttf'), size)
+        fontObj = pygame.font.Font(get_path('resource/font/simhei.ttf'), size)
         textSurfaceObj = fontObj.render(text, True, config.white, config.black)
         textRectObj = textSurfaceObj.get_rect()
         textRectObj.center = (xx, yy)
@@ -224,6 +228,7 @@ class Ytz(object):
     def roll_dice(self, protocol):
         logger.debug(protocol)
         e = protocol['button']
+        self.play_music(get_path('resource/audio/roll_dice.mp3'), 1, 1)
         if protocol['from'] == self.name:
             if e == 'down':
                 pygame.draw.circle(self.screen, config.green, config.roll_circle_position, 2 * config.roll_font / 3)
@@ -241,7 +246,6 @@ class Ytz(object):
                 else:
                     self.draw_board()
                     return
-                self.play_music(get_path('audio/roll_dice.mp3'), 1, 1)
                 self.roll_time += 1
                 self.selected_dice = []
                 self.count_score()
@@ -258,8 +262,8 @@ class Ytz(object):
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
-        if (protocol['from'] == self.name) and (self.order * 17 + 5 < e < self.order * 17 + 23) or protocol[
-            'from'] == 'opponent':
+        if (protocol['from'] == self.name) and (self.order * 17 + 5 < e < self.order * 17 + 23) \
+                or protocol['from'] == 'opponent':
             if self.roll_time != 0:
                 i = e - 6 if e < 23 else e - 23
                 if not self.score_record[self.player][i]["recorded"]:
@@ -306,14 +310,25 @@ class Ytz(object):
                         sys.exit()
 
     # 处理登录信息
-    def login(self, protocol):
-        if 'order' in protocol:
-            logger.info('order:{}'.format(protocol['order']))
-            self.order = protocol.get('order', None)
-        if 'opponent' in protocol:
-            self.opponent = protocol['opponent']
-            self.player = [self.name, 'opponent'][self.order]
-        return True
+    def login(self, l_socket):
+        logger.info("登录中...")
+        protocol = str({"protocol": "login", "name": self.name, "room_num": 4396})
+        l_socket.send(protocol.encode())
+        data = l_socket.recv(4096)
+        rec_protocol = json.loads(data.decode())
+        if json.loads(data.decode())['login_state']:
+            logger.info("登录成功")
+            l_socket.setblocking(False)
+            self.login_state = True
+            if 'order' in rec_protocol:
+                logger.info('order:{}'.format(rec_protocol['order']))
+                self.order = rec_protocol.get('order', None)
+            if 'opponent' in rec_protocol:
+                self.opponent = rec_protocol['opponent']
+                self.player = [self.name, 'opponent'][self.order]
+        else:
+            logger.info("登录失败")
+            self.login_state = False
 
     @staticmethod
     def play_music(path, volume, time):
@@ -322,20 +337,15 @@ class Ytz(object):
         music.set_volume(volume)
         music.play(time, 0, 0)
 
-    @staticmethod
-    def play_music(path, volume, time):
-        logger.debug('play music:{} {} time'.format(path, "∞" if time == -1 else time))
-        music = pygame.mixer.Sound(get_path(path))
-        music.set_volume(volume)
-        music.play(time, 0, 0)
-
-    # 检查协议并调用方法
-    def protocol_handler(self, protocol):
-        protocol_name = protocol['protocol']
+    def call_method(self, protocol_data):
+        if type(protocol_data) == bytes:
+            protocol_data = json.loads(protocol_data.decode())
+        # 根据协议中的protocol字段，直接调用相应的函数处理
+        protocol_name = protocol_data['protocol']
         if not hasattr(self, protocol_name):
             return None
         method = getattr(self, protocol_name)
-        if method(protocol):
+        if method(protocol_data):
             self.draw_board()
             return True
 
@@ -344,43 +354,39 @@ class Ytz(object):
         # 建立socket连接
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((IP, PORT))
-        s.setblocking(0)
         # 向服务端发送登录信息
-        login_data = str({"protocol": "login", "name": self.name})
-        s.send(login_data.encode())
+        self.login(s)
 
-        try:
-            while True:
-                try:
-                    data = s.recv(4096)  # 只做粘包不做分包处理。
-                    if len(data) == 0:
-                        logger.info('有玩家离线')
-                        s.close()
-                        break
-                    # 将字节流转成字符串
-                    protocol_str = data.decode()
-                    protocol = json.loads(protocol_str)
-                    # 根据协议中的protocol字段，直接调用相应的函数处理
-                    self.protocol_handler(protocol)
-                except:
-                    pass
-                if self.player == self.name:
-                    for event in pygame.event.get():
-                        protocol = self.check_event(event)
-                        if protocol:
-                            if self.protocol_handler(protocol):
-                                s.send(str(protocol).encode())
-                elif self.player and self.player != self.name:
-                    for event in pygame.event.get():
-                        if event.type == QUIT:
-                            pygame.quit()
-                            sys.exit()
-                        if self.player == self.name:
+        if self.login_state:
+            try:
+                while True:
+                    try:
+                        data = s.recv(4096)  # 只做粘包不做分包处理。
+                        if len(data) == 0:
+                            logger.info('有玩家离线')
+                            s.close()
                             break
-                self.game_over()
-        except:
-            s.close()
-            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+                        self.call_method(data)
+                        # 将字节流转成字符串
+                    except BlockingIOError:
+                        pass
+                    if self.player == self.name:
+                        for event in pygame.event.get():
+                            protocol = self.check_event(event)
+                            if protocol:
+                                if self.call_method(protocol):
+                                    s.send(str(protocol).encode())
+                    elif self.player and self.player != self.name:
+                        for event in pygame.event.get():
+                            if event.type == QUIT:
+                                pygame.quit()
+                                sys.exit()
+                            if self.player == self.name:
+                                break
+                    self.game_over()
+            except ConnectionResetError:
+                s.close()
+                logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 if __name__ == "__main__":
