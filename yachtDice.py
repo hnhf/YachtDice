@@ -133,8 +133,8 @@ class Ytz(object):
         # 根据玩家数量用竖线把各玩家分数隔开
         for i in range(player_num - 1):
             pygame.draw.line(self.screen, config.black,
-                         (config.list_x_length + i * config.list_player_length / (i + 1), config.dice_length),
-                         (config.list_x_length + i * config.list_player_length / (i + 1), config.y_length), 3)
+                             (config.list_x_length + i * config.list_player_length / (i + 1), config.dice_length),
+                             (config.list_x_length + i * config.list_player_length / (i + 1), config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
@@ -149,6 +149,7 @@ class Ytz(object):
 
     # 检查事件，一个返回字典
     def check_event(self, event):
+        player_num = len(self.player_list)
         if event.type == QUIT:
             return {"protocol": 'offline', "button": 'quit', 'from': self.name}
         if event.type == MOUSEBUTTONDOWN:  # 鼠标点击，根据点击位置返回数字
@@ -160,21 +161,17 @@ class Ytz(object):
             if (mouse_x - config.roll_circle_position[0]) ** 2 + (
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return {"protocol": "roll_dice", "button": "down", 'from': self.name}  # 鼠标在摇按钮处点下
-            for i in range(17):
-                if (mouse_x - config.player_1_location) ** 2 + (
+            for i in range(17):  # 如果点击的位置是自己分数的位置的话
+                if (mouse_x - config.locations[player_num][self.player_list[self.name]]) ** 2 + (
                         mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
                         config.list_y_length / 2) ** 2:
-                    return {"protocol": "record_score", "button": i + 6, 'from': self.name}
-                if (mouse_x - config.player_2_location) ** 2 + (
-                        mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
-                        config.list_y_length / 2) ** 2:
-                    return {"protocol": "record_score", "button": i + 23, 'from': self.name}
-            (mouse_x, mouse_y) = (0, 0)  # 重置鼠标位置记录
+                    return {"protocol": "record_score", "button": i, 'from': self.name}
         if event.type == MOUSEBUTTONUP:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
             if (mouse_x - config.roll_circle_position[0]) ** 2 + (
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return {"protocol": "roll_dice", "button": "up", 'from': self.name}  # 鼠标在摇按钮处抬起
+        (mouse_x, mouse_y) = (0, 0)  # 重置鼠标位置记录
         return False  # 鼠标点击其他位置
 
     # 计算本次各项分数
@@ -254,8 +251,8 @@ class Ytz(object):
                 self.count_score()
                 protocol.update({'dice': self.dice})
                 return True
-        elif protocol['from'] == 'opponent':
-            logger.debug("opponent_dice :{}".format(protocol['dice']))
+        elif protocol['from'] != self.name:
+            logger.debug("opponent: {}, dice: {}".format(protocol['from'], protocol['dice']))
             self.dice = protocol['dice']
             self.roll_time += 1
             self.selected_dice = []
@@ -265,47 +262,43 @@ class Ytz(object):
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
-        if (protocol['from'] == self.name) and (self.order * 17 + 5 < e < self.order * 17 + 23) \
-                or protocol['from'] == 'opponent':
-            if self.roll_time != 0:
-                i = e - 6 if e < 23 else e - 23
-                if not self.score_record[self.player][i]["recorded"]:
-                    #  如果当前玩家位置和点击位置相一致, 并且此位置未记录分数的话
-                    logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[i]))
-                    self.score_record[self.player][i]["score"] = self.score_now[i]
-                    self.score_record[self.player][i]["recorded"] = True
-                    upper_half = 0
-                    for ii in [6, 7, 15, 16]:
-                        self.score_record[self.player][ii]["score"] = 0
-                    for j in range(6):
-                        upper_half += self.score_record[self.player][j]["score"]
-                    if upper_half > 62:
-                        self.score_record[self.player][6]["score"] = 35
-                        self.score_record[self.player][7]["score"] = upper_half + 35
-                    else:
-                        self.score_record[self.player][6]["score"] = upper_half - 63
-                        self.score_record[self.player][7]["score"] = upper_half
-                    self.score_record[self.player][6]["recorded"] = True
-                    for k in range(7):
-                        self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
-                    self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
-                                                                  self.score_record[self.player][15]["score"]
-                    self.player = self.name if (self.player == 'opponent') else 'opponent'  # 交换玩家
-                    self.game_turn += 1  # 回合数+1
-                    self.roll_time = 0  # 摇骰子次数变为0
-                    self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
-                    self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
-                    return True
+        if protocol['from'] == self.player and self.roll_time != 0 and not self.score_record[self.player][e]["recorded"]:
+            #  如果来自于当前玩家, 并且已经摇过一次骰子，并且此位置未记录分数
+            logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[e]))
+            self.score_record[self.player][e]["score"] = self.score_now[e]
+            self.score_record[self.player][e]["recorded"] = True
+            upper_half = 0
+            for ii in [6, 7, 15, 16]:
+                self.score_record[self.player][ii]["score"] = 0
+            for j in range(6):
+                upper_half += self.score_record[self.player][j]["score"]
+            if upper_half > 62:
+                self.score_record[self.player][6]["score"] = 35
+                self.score_record[self.player][7]["score"] = upper_half + 35
+            else:
+                self.score_record[self.player][6]["score"] = upper_half - 63
+                self.score_record[self.player][7]["score"] = upper_half
+            self.score_record[self.player][6]["recorded"] = True
+            for k in range(7):
+                self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
+            self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
+                                                          self.score_record[self.player][15]["score"]
+            self.player = [key for key, value in self.player_list.items() if value == (self.player_list[self.player] + 1) % len(self.player_list)]  # 交换玩家
+            self.game_turn += 1  # 回合数+1
+            self.roll_time = 0  # 摇骰子次数变为0
+            self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
+            self.score_now = np.zeros(17, dtype=int)  # 初始化临时分数
+            return True
 
     # 判断胜负
     def game_over(self):
-        if self.game_turn > 26:
-            if self.score_record[self.name][16]["score"] > self.score_record['opponent'][16]["score"]:
-                self.draw_text('你赢了！', config.x_length / 2, config.y_length / 2, 50)
-            elif self.score_record[self.name][16]["score"] < self.score_record['opponent'][16]["score"]:
-                self.draw_text('你输了！', config.x_length / 2, config.y_length / 2, 50)
-            else:
-                self.draw_text('平局了！', config.x_length / 2, config.y_length / 2, 50)
+        if self.game_turn > 13 * len(self.player_list):
+            # if self.score_record[self.name][16]["score"] > self.score_record['opponent'][16]["score"]:
+            #     self.draw_text('你赢了！', config.x_length / 2, config.y_length / 2, 50)
+            # elif self.score_record[self.name][16]["score"] < self.score_record['opponent'][16]["score"]:
+            #     self.draw_text('你输了！', config.x_length / 2, config.y_length / 2, 50)
+            # else:
+            self.draw_text('游戏结束', config.x_length / 2, config.y_length / 2, 50)
             while True:
                 for event in pygame.event.get():
                     if event.type == QUIT:
