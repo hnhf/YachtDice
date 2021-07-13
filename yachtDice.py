@@ -51,7 +51,7 @@ class Ytz(object):
         self.player = None  # 当前回合玩家
         self.login_state = False
         self.room_num = room
-        self.player_list = None
+        self.player_list = {self.name: self.order}
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
         self.dice = [0, 0, 0, 0, 0]  # 当前骰子点数
@@ -262,7 +262,8 @@ class Ytz(object):
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
-        if protocol['from'] == self.player and self.roll_time != 0 and not self.score_record[self.player][e]["recorded"]:
+        if protocol['from'] == self.player and self.roll_time != 0 and not self.score_record[self.player][e][
+            "recorded"]:
             #  如果来自于当前玩家, 并且已经摇过一次骰子，并且此位置未记录分数
             logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[e]))
             self.score_record[self.player][e]["score"] = self.score_now[e]
@@ -283,7 +284,8 @@ class Ytz(object):
                 self.score_record[self.player][15]["score"] += self.score_record[self.player][k + 8]["score"]
             self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
                                                           self.score_record[self.player][15]["score"]
-            self.player = [key for key, value in self.player_list.items() if value == (self.player_list[self.player] + 1) % len(self.player_list)]  # 交换玩家
+            self.player = [key for key, value in self.player_list.items() if
+                           value == (self.player_list[self.player] + 1) % len(self.player_list)]  # 交换玩家
             self.game_turn += 1  # 回合数+1
             self.roll_time = 0  # 摇骰子次数变为0
             self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
@@ -306,28 +308,17 @@ class Ytz(object):
                         sys.exit()
 
     # 处理登录信息
-    def login(self, s):
-        logger.info("登录中...")
-        protocol = str({"protocol": "login", "name": self.name, "room_num": self.room})
-        s.send(protocol.encode())
-        data = s.recv(4096)
-        rec_protocol = json.loads(data.decode())
-        if rec_protocol['login_state']:
+    def login(self, protocol):
+        if protocol['login_state']:
             logger.info("登录成功")
-            self.location = rec_protocol['location']
-            self.room_num = rec_protocol['room_num']
-            s.setblocking(False)
+            self.order = protocol['order']
+            self.room_num = protocol['room_num']
             self.login_state = True
-            if 'order' in rec_protocol:
-                logger.info('order:{}'.format(rec_protocol['order']))
-                self.order = rec_protocol.get('order', None)
-            if 'opponent' in rec_protocol:
-                self.opponent = rec_protocol['opponent']
-                self.player = [self.name, 'opponent'][self.order]
-            self.login_state = True
-        else:
-            logger.info("登录失败")
-            self.login_state = False
+        if 'opponent' in protocol:
+            self.player_list.update({protocol['opponent']: protocol['order']})
+
+    def game_begin(self, protocol):
+        self.player = [key for key, value in self.player_list if value == 0]
 
     @staticmethod
     def play_music(path, volume, time):
@@ -336,15 +327,15 @@ class Ytz(object):
         music.set_volume(volume)
         music.play(time, 0, 0)
 
-    def call_method(self, protocol_data):
-        if type(protocol_data) == bytes:
-            protocol_data = json.loads(protocol_data.decode())
+    def call_method(self, data):
+        if type(data) == bytes:
+            protocol = json.loads(data.decode())
         # 根据协议中的protocol字段，直接调用相应的函数处理
-        protocol_name = protocol_data['protocol']
+        protocol_name = protocol['protocol']
         if not hasattr(self, protocol_name):
             return None
         method = getattr(self, protocol_name)
-        if method(protocol_data):
+        if method(protocol):
             self.draw_board()
             return True
 
@@ -357,6 +348,7 @@ class Ytz(object):
                         logger.info('有玩家离线')
                         s.close()
                         break
+
                     self.call_method(data)
                     # 将字节流转成字符串
                 except BlockingIOError:
@@ -364,27 +356,29 @@ class Ytz(object):
 
     def send_data(self):
         # 向服务端发送登录信息
-        self.login(s)
-        # try:
-        #     if self.player == self.name:
-        #         for event in pygame.event.get():
-        #             protocol = self.check_event(event)
-        #             if protocol:
-        #                 if self.call_method(protocol):
-        #                     s.send(str(protocol).encode())
-        #     elif self.player and self.player != self.name:
-        #         for event in pygame.event.get():
-        #             if event.type == QUIT:
-        #                 pygame.quit()
-        #                 sys.exit()
-        #             if self.player == self.name:
-        #                 break
-        #     else:
-        #         self.draw_board()
-        #     self.game_over()
-        # except ConnectionResetError:
-        #     s.close()
-        #     logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+        protocol = str({"protocol": "login", "name": self.name, "room_num": self.room_num})
+        s.send(protocol.encode())
+        try:
+            while True:
+                if self.player == self.name:
+                    for event in pygame.event.get():
+                        protocol = self.check_event(event)
+                        if protocol:
+                            if self.call_method(protocol):
+                                s.send(str(protocol).encode())
+                elif self.player and self.player != self.name:
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if self.player == self.name:
+                            break
+                else:
+                    pass
+                self.game_over()
+        except ConnectionResetError:
+            s.close()
+            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 def main():
@@ -395,7 +389,7 @@ def main():
     y = Ytz(p_name, s_room)
     threads = list()
     threads.append(Thread(target=y.send_data))
-    # threads.append(Thread(target=y.recv_data))
+    threads.append(Thread(target=y.recv_data))
     for thread in threads:
         thread.start()
 
