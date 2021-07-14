@@ -1,4 +1,5 @@
 import json
+import time
 import socket
 from threading import Thread
 from loguru import logger
@@ -76,7 +77,7 @@ class Player:
         给玩家发送协议包
         py_obj:python的字典或者list
         """
-        self.socket.sendall((json.dumps(py_obj, ensure_ascii=False)).encode())
+        self.socket.sendall((json.dumps(py_obj, ensure_ascii=False) + '#').encode())
 
     def send_all_player(self, py_obj):
         """
@@ -114,16 +115,18 @@ class ProtocolHandler:
     def login(player, protocol):
         player.login_state = True
         # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        player.order = len(player.connections)
+        player.order = len(player.connections) - 1
         player.name = protocol['name']
         # 发送登录成功协议
-        player.send({"protocol": "login", "order": player.order})
+        player.send({"protocol": "login", "login_state": True, "order": player.order})
+        logger.info('玩家{}登录成功，order: {}，当前玩家数量: {}'.format(player.name, player.order, len(player.connections)))
         for i in player.connections:
             if i is not player and i.login_state:
                 player.send({"protocol": "login", "opponent": i.name, 'order': i.order})
                 i.send({"protocol": "login", "opponent": protocol['name'], 'order': player.order})
         if player.order == int(protocol['player_num']) - 1:
             player.send_all_player({"protocol": "login", "begin": True})
+            logger.info('游戏开始')
 
 
 if __name__ == '__main__':

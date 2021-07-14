@@ -33,7 +33,7 @@ s.connect((IP, PORT))
 
 class Ytz(object):
     def __init__(self, name, number):
-        self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
+        #  self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load(get_path('resource/images/background.jpg'))
@@ -305,14 +305,15 @@ class Ytz(object):
 
     # 处理登录信息
     def login(self, protocol):
-        if protocol['login_state']:
+        if 'login_state' in protocol:
             logger.info("登录成功")
             self.order = protocol['order']
+            self.player_list[self.name] = self.order
             self.login_state = True
         if 'opponent' in protocol and protocol['opponent'] not in self.player_list:
             self.player_list.update({protocol['opponent']: protocol['order']})
         if 'begin' in protocol:
-            self.player = [key for key, value in self.player_list if value == 0]
+            self.player = [key for key, value in self.player_list.items() if value == 0][0]
 
     @staticmethod
     def play_music(path, volume, time):
@@ -323,55 +324,72 @@ class Ytz(object):
 
     def call_method(self, data):
         if type(data) == bytes:
-            data = json.loads(data.decode())
+            data = data.decode()
+            if '#' in data:
+                data_list = data.split('#')
+                for per_data in data_list:
+                    if len(per_data) == 0:
+                        continue
+                    data1 = json.loads(per_data)
+                    protocol = data1['protocol']
+                    if not hasattr(self, protocol):
+                        return None
+                    method = getattr(self, protocol)
+                    if method(data1):
+                        self.draw_board()
+                        return True
+            else:
+                data1 = json.loads(data.decode())
+                protocol = data1['protocol']
+                if not hasattr(self, protocol):
+                    return None
+                method = getattr(self, protocol)
+                if method(data1):
+                    self.draw_board()
+                    return True
         # 根据协议中的protocol字段，直接调用相应的函数处理
-        protocol = data['protocol']
-        if not hasattr(self, protocol):
-            return None
-        method = getattr(self, protocol)
-        if method(data):
-            self.draw_board()
-            return True
 
     def recv_data(self):
         while True:
-            if self.login_state:
-                try:
-                    data = s.recv(4096)  # 只做粘包不做分包处理。
-                    if len(data) == 0:
-                        logger.info('有玩家离线')
-                        s.close()
-                        break
-                    self.call_method(data)
-                    # 将字节流转成字符串
-                except BlockingIOError:
-                    pass
+            try:
+                data = s.recv(4096)  # 只做粘包不做分包处理。
+                if len(data) == 0:
+                    logger.info('有玩家离线')
+                    s.close()
+                    break
+                self.call_method(data)
+                # 将字节流转成字符串
+            except BlockingIOError:
+                pass
 
     def send_data(self):
         # 向服务端发送登录信息
         protocol = str({"protocol": "login", "name": self.name, "player_num": self.player_num})
         s.send(protocol.encode())
-        try:
-            while True:
-                if self.player == self.name:
-                    for event in pygame.event.get():
-                        protocol = self.check_event(event)
-                        if protocol:
-                            if self.call_method(protocol):
-                                s.send(str(protocol).encode())
-                elif self.player and self.player != self.name:
-                    for event in pygame.event.get():
-                        if event.type == QUIT:
-                            pygame.quit()
-                            sys.exit()
-                        if self.player == self.name:
-                            break
-                else:
-                    pass
-                self.game_over()
-        except ConnectionResetError:
-            s.close()
-            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+        # try:
+        while True:
+            if self.player == self.name:
+                self.draw_board()
+                for event in pygame.event.get():
+                    protocol = self.check_event(event)
+                    if protocol:
+                        if self.call_method(protocol):
+                            s.send(str(protocol).encode())
+            elif self.player and self.player != self.name:
+                self.draw_board()
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        logger.info('主动退出')
+                        pygame.quit()
+                        sys.exit()
+                    if self.player == self.name:
+                        break
+            else:
+                pass
+            self.game_over()
+        # except ConnectionResetError:
+        #     s.close()
+        #     logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 def main():
@@ -380,7 +398,7 @@ def main():
     # logger.info("请输入玩家数量:")
     # p_number = input()
     p_name = 'aoto'
-    p_number = '3'
+    p_number = '2'
     y = Ytz(p_name, p_number)
     threads = list()
     threads.append(Thread(target=y.send_data))
