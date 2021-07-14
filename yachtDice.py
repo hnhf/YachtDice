@@ -323,13 +323,13 @@ class Ytz(object):
 
     def call_method(self, data):
         if type(data) == bytes:
-            protocol = json.loads(data.decode())
+            data = json.loads(data.decode())
         # 根据协议中的protocol字段，直接调用相应的函数处理
-        protocol_name = protocol['protocol']
-        if not hasattr(self, protocol_name):
+        protocol = data['protocol']
+        if not hasattr(self, protocol):
             return None
-        method = getattr(self, protocol_name)
-        if method(protocol):
+        method = getattr(self, protocol)
+        if method(data):
             self.draw_board()
             return True
 
@@ -342,7 +342,6 @@ class Ytz(object):
                         logger.info('有玩家离线')
                         s.close()
                         break
-
                     self.call_method(data)
                     # 将字节流转成字符串
                 except BlockingIOError:
@@ -376,11 +375,12 @@ class Ytz(object):
 
 
 def main():
-    logger.info("请输入昵称:")
-    p_name = input()
+    # logger.info("请输入昵称:")
+    # p_name = input()
     # logger.info("请输入玩家数量:")
     # p_number = input()
-    p_number = '2'
+    p_name = 'aoto'
+    p_number = '3'
     y = Ytz(p_name, p_number)
     threads = list()
     threads.append(Thread(target=y.send_data))

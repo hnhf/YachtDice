@@ -5,10 +5,6 @@ from loguru import logger
 
 
 class Server:
-    """
-    服务端主类
-    """
-    __user_cls = None
 
     def __init__(self, ip, port):
         self.connections = []  # 所有客户端连接
@@ -19,42 +15,25 @@ class Server:
             self.listener.listen(5)  # 最大等待数
         except:
             logger.info('服务器启动失败，请检查ip端口是否被占用。详细原因请查看日志文件')
-
-        if self.__user_cls is None:
-            logger.info('服务器启动失败，未注册用户自定义类')
-            return
-
         logger.info('服务器启动成功：{}:{}'.format(ip, port))
         while True:
             client, _ = self.listener.accept()  # 阻塞，等待客户端连接
-            user = self.__user_cls(client, self.connections)
+            user = Player(client, self.connections)
             self.connections.append(user)
-            c = self.connections[-1]
-            logger.debug('connection 初始化 {}'.format(c.name))
             logger.info('新连接进入，IP:{}'.format(client.getpeername()[0]))
             logger.info('有新连接进入，当前连接数：{}'.format(len(self.connections)))
 
-    @classmethod
-    def register_cls(cls, sub_cls):
-        """
-        注册玩家的自定义类
-        """
-        if not issubclass(sub_cls, Connection):
-            logger.info('注册用户自定义类失败，类型不匹配')
-            return
-        cls.__user_cls = sub_cls
 
-
-class Connection:
-    """
-    连接类，每个socket连接都是一个connection
-    """
+class Player:
 
     def __init__(self, client, connections):
         self.socket = client
-        self.name = None
         self.connections = connections
+        self.name = None
+        self.order = None
+        self.login_state = False  # 登录状态
         self.data_handler()
+        self.protocol_handler = ProtocolHandler()  # 协议处理对象
 
     def data_handler(self):
         # 给每个连接创建一个独立的线程进行管理
@@ -66,35 +45,17 @@ class Connection:
         # 接收数据
         try:
             while True:
-                data = self.socket.recv(4096)  # 我们这里只做一个简单的服务端框架，只做粘包不做分包处理。
-                if len(data) == 0:
+                data = self.socket.recv(4096)   # 我们这里只做一个简单的服务端框架，只做粘包不做分包处理。
+                if len(data) == 0:              # 数据为空则判断为玩家离线
                     logger.info('有玩家离线')
                     self.socket.close()
-                    # 删除连接
                     self.connections.remove(self)
                     break
-                # 处理数据
-                self.deal_data(data)
+                self.deal_data(data)            # 处理数据
         except:
-            # self.socket.close()
+            self.socket.close()
             self.connections.remove(self)
             logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
-
-    def deal_data(self, data):
-        """
-        处理客户端的数据，需要子类实现
-        """
-        raise NotImplementedError
-
-
-@Server.register_cls
-class Player(Connection):
-
-    def __init__(self, *args):
-        self.login_state = False  # 登录状态
-        self.order = None  # 玩家游戏中的相关数据
-        self.protocol_handler = ProtocolHandler()  # 协议处理对象
-        super().__init__(*args)
 
     def deal_data(self, data):
         """
@@ -105,10 +66,8 @@ class Player(Connection):
                 客户端发送：{"protocol":"login","username":"玩家账号"}
                 服务端返回：{"protocol":"login","result":true,"order":‘’}
         """
-        # 将字节流转成字符串
-        event_str = data.decode()
-        # 处理每一个协议,最后一个是空字符串，不用处理它
-        protocol = eval(event_str)
+        # 将字节流转成字符串再转为json数据
+        protocol = eval(data.decode())
         # 根据协议中的protocol字段，直接调用相应的函数处理
         self.protocol_handler(self, protocol)
 
@@ -131,7 +90,6 @@ class Player(Connection):
         """
         发送给除了自己的所有在线玩家
         """
-        py_obj['from'] = 'opponent'
         for player in self.connections:
             if player is not self and player.login_state:
                 player.send(py_obj)
@@ -156,7 +114,7 @@ class ProtocolHandler:
     def login(player, protocol):
         player.login_state = True
         # 由于我们还没接入数据库，玩家的信息还无法持久化，所以我们写死几个账号在这里吧
-        player.order = len(player.connections) - 1
+        player.order = len(player.connections)
         player.name = protocol['name']
         # 发送登录成功协议
         player.send({"protocol": "login", "order": player.order})

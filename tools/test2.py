@@ -37,7 +37,7 @@ def main():
     # p_name = input()
     # logger.info("请输入玩家数量:")
     # p_number = input()
-    p_name = 'dama'
+    p_name = 'xiaopang'
     p_number = '3'
     y = Ytz(p_name, p_number)
     threads = list()
