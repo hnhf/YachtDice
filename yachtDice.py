@@ -7,8 +7,6 @@ import json
 import random
 import math
 import sys
-from time import sleep
-
 import numpy as np
 import pygame
 from pygame.locals import *
@@ -26,7 +24,7 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '112.232.240.231'
+IP = '192.168.31.8'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,7 +32,7 @@ s.connect((IP, PORT))
 
 
 class Ytz(object):
-    def __init__(self, name, room):
+    def __init__(self, name, number):
         self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
@@ -46,11 +44,11 @@ class Ytz(object):
                     pygame.image.load(get_path('resource/images/04.png')), pygame.image.load(get_path(
                 'resource/images/05.png')),
                     pygame.image.load(get_path('resource/images/06.png'))]
-        self.name = name  # 玩家昵称
-        self.order = None  # 玩家顺序
+        self.player_num = int(number)
+        self.name = name    # 玩家昵称
+        self.order = 0      # 玩家顺序
         self.player = None  # 当前回合玩家
         self.login_state = False
-        self.room_num = room
         self.player_list = {self.name: self.order}
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
@@ -84,8 +82,7 @@ class Ytz(object):
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
 
         # 显示出游戏玩家
-        player_num = len(self.player_list)
-        player_location = config.locations[player_num]
+        player_location = config.locations[self.player_num]
         self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
                          (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
@@ -131,7 +128,7 @@ class Ytz(object):
                          (config.list_x_length, config.y_length),
                          3)
         # 根据玩家数量用竖线把各玩家分数隔开
-        for i in range(player_num - 1):
+        for i in range(self.player_num - 1):
             pygame.draw.line(self.screen, config.black,
                              (config.list_x_length + i * config.list_player_length / (i + 1), config.dice_length),
                              (config.list_x_length + i * config.list_player_length / (i + 1), config.y_length), 3)
@@ -149,7 +146,6 @@ class Ytz(object):
 
     # 检查事件，一个返回字典
     def check_event(self, event):
-        player_num = len(self.player_list)
         if event.type == QUIT:
             return {"protocol": 'offline', "button": 'quit', 'from': self.name}
         if event.type == MOUSEBUTTONDOWN:  # 鼠标点击，根据点击位置返回数字
@@ -162,7 +158,7 @@ class Ytz(object):
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return {"protocol": "roll_dice", "button": "down", 'from': self.name}  # 鼠标在摇按钮处点下
             for i in range(17):  # 如果点击的位置是自己分数的位置的话
-                if (mouse_x - config.locations[player_num][self.player_list[self.name]]) ** 2 + (
+                if (mouse_x - config.locations[self.player_num][self.player_list[self.name]]) ** 2 + (
                         mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
                         config.list_y_length / 2) ** 2:
                     return {"protocol": "record_score", "button": i, 'from': self.name}
@@ -312,13 +308,11 @@ class Ytz(object):
         if protocol['login_state']:
             logger.info("登录成功")
             self.order = protocol['order']
-            self.room_num = protocol['room_num']
             self.login_state = True
-        if 'opponent' in protocol:
+        if 'opponent' in protocol and protocol['opponent'] not in self.player_list:
             self.player_list.update({protocol['opponent']: protocol['order']})
-
-    def game_begin(self, protocol):
-        self.player = [key for key, value in self.player_list if value == 0]
+        if 'begin' in protocol:
+            self.player = [key for key, value in self.player_list if value == 0]
 
     @staticmethod
     def play_music(path, volume, time):
@@ -356,7 +350,7 @@ class Ytz(object):
 
     def send_data(self):
         # 向服务端发送登录信息
-        protocol = str({"protocol": "login", "name": self.name, "room_num": self.room_num})
+        protocol = str({"protocol": "login", "name": self.name, "player_num": self.player_num})
         s.send(protocol.encode())
         try:
             while True:
@@ -384,9 +378,10 @@ class Ytz(object):
 def main():
     logger.info("请输入昵称:")
     p_name = input()
-    logger.info("请输入房间号:")
-    s_room = input()
-    y = Ytz(p_name, s_room)
+    # logger.info("请输入玩家数量:")
+    # p_number = input()
+    p_number = '2'
+    y = Ytz(p_name, p_number)
     threads = list()
     threads.append(Thread(target=y.send_data))
     threads.append(Thread(target=y.recv_data))
