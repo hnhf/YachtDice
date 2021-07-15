@@ -4,7 +4,9 @@ from threading import Thread
 
 from loguru import logger
 
-logger.add('./logs/server.log')
+from tools.frozen import get_path
+
+logger.add(get_path('logs/server.log'))
 
 
 class Server:
@@ -19,7 +21,7 @@ class Server:
             self.listener.listen(5)  # 最大等待数
             self.state = True
         except OSError:
-            logger.error('服务器启动失败，请检查ip端口是否被占用。详细原因请查看日志文件')
+            logger.error('服务器启动失败，请检查ip端口是否被占用')
             exit()
         if self.state:
             logger.info('服务器启动成功：{}:{}'.format(ip, port))
