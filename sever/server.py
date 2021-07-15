@@ -4,10 +4,6 @@ from threading import Thread
 
 from loguru import logger
 
-from tools.frozen import get_path
-
-logger.add(get_path('logs/server.log'))
-
 
 class Server:
 
@@ -64,7 +60,7 @@ class Player:
         except ConnectionError:
             self.socket.close()
             self.connections.remove(self)
-            logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+            logger.info('{}发送的数据异常：已强制下线'.format(self.name))
 
     def deal_data(self, data):
         """
