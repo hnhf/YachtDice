@@ -136,4 +136,4 @@ class ProtocolHandler:
 
 
 if __name__ == '__main__':
-    server = Server('192.168.201.64', 6667)
+    server = Server('0.0.0.0', 6666)
