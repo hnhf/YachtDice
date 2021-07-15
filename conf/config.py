@@ -17,8 +17,9 @@ score_font = 20
 roll_position = (dice_length * 5 + roll_length / 2 - roll_font / 2, roll_length / 2 - roll_font / 2 - roll_length / 10)
 roll_circle_position = (dice_length * 5 + roll_length / 2, roll_length / 2 - roll_length / 10)
 roll_circle_radius = 30
-player_location2 = [(x_length - list_x_length) / 4, (x_length - list_x_length) * 3 / 4]
-player_location3 = [(x_length - list_x_length) / 6, (x_length - list_x_length) / 2, (x_length - list_x_length) * 5 / 6]
+player_location2 = [list_x_length + (x_length - list_x_length) / 4, list_x_length + (x_length - list_x_length) * 3 / 4]
+player_location3 = [list_x_length + (x_length - list_x_length) / 6, list_x_length + (x_length - list_x_length) / 2,
+                    list_x_length + (x_length - list_x_length) * 5 / 6]
 locations = [player_location2, player_location3]
 
 # 颜色

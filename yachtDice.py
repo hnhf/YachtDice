@@ -24,7 +24,7 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '192.168.31.8'
+IP = '10.166.23.147'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,16 +37,16 @@ class Ytz(object):
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load(get_path('resource/images/background.jpg'))
-        self.img = [pygame.image.load(get_path('resource/images/0.jpg')), pygame.image.load(get_path(
-            'resource/images/01.png')),
-                    pygame.image.load(get_path('resource/images/02.png')), pygame.image.load(get_path(
-                'resource/images/03.png')),
-                    pygame.image.load(get_path('resource/images/04.png')), pygame.image.load(get_path(
-                'resource/images/05.png')),
+        self.img = [pygame.image.load(get_path('resource/images/0.jpg')),
+                    pygame.image.load(get_path('resource/images/01.png')),
+                    pygame.image.load(get_path('resource/images/02.png')),
+                    pygame.image.load(get_path('resource/images/03.png')),
+                    pygame.image.load(get_path('resource/images/04.png')),
+                    pygame.image.load(get_path('resource/images/05.png')),
                     pygame.image.load(get_path('resource/images/06.png'))]
         self.player_num = int(number)
-        self.name = name    # 玩家昵称
-        self.order = 0      # 玩家顺序
+        self.name = name  # 玩家昵称
+        self.order = 0  # 玩家顺序
         self.player = None  # 当前回合玩家
         self.login_state = False
         self.player_list = {self.name: self.order}
@@ -55,18 +55,12 @@ class Ytz(object):
         self.dice = [0, 0, 0, 0, 0]  # 当前骰子点数
         self.selected_dice = []  # 选择要摇的骰子
         self.score_now = np.zeros(17, dtype=int)  # 临时显示本次摇骰子的各项分数
-        self.score_record = {self.name: {}, "opponent1": {}, "opponent2": {}}  # 已经记录的分数
+        self.score_record = {self.name: {}}  # 已经记录的分数
         for i in range(17):  # 创建dict对象来记录两位玩家的分数，False表示未计分
             self.score_record[self.name].update(
                 {i: {"score": 0, "recorded": False}})
-            self.score_record["opponent1"].update(
-                {i: {"score": 0, "recorded": False}})
-            self.score_record["opponent2"].update(
-                {i: {"score": 0, "recorded": False}})
         for j in [7, 15, 16]:  # 对于Bonus和总分项不需要点击登记，而是实时计算
             self.score_record[self.name][j]["recorded"] = True
-            self.score_record["opponent1"][j]["recorded"] = True
-            self.score_record["opponent2"][j]["recorded"] = True
 
     # 画出游戏界面
     def draw_board(self):
@@ -82,16 +76,12 @@ class Ytz(object):
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
 
         # 显示出游戏玩家
-        player_location = config.locations[self.player_num]
+        player_location = config.locations[self.player_num - 2]
         self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
                          (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
-        player_color = []
-        for player, order in self.player_list.items:
-            if player == self.player:
-                player_color.append(config.red)
-            else:
-                player_color.append(config.black)
+        player_color = [config.black, config.black, config.black]
+        player_color[self.player_list[self.player]] = config.red
 
         # 显示出各项分数
         for player, order in self.player_list.items():
@@ -127,11 +117,12 @@ class Ytz(object):
         pygame.draw.line(self.screen, config.black, (config.list_x_length, config.dice_length),
                          (config.list_x_length, config.y_length),
                          3)
+
         # 根据玩家数量用竖线把各玩家分数隔开
-        for i in range(self.player_num - 1):
+        for i in range(self.player_num):
             pygame.draw.line(self.screen, config.black,
-                             (config.list_x_length + i * config.list_player_length / (i + 1), config.dice_length),
-                             (config.list_x_length + i * config.list_player_length / (i + 1), config.y_length), 3)
+                             (config.list_x_length + i * config.list_player_length / self.player_num, config.dice_length),
+                             (config.list_x_length + i * config.list_player_length / self.player_num, config.y_length), 3)
         pygame.display.update()
 
     # 弹出提示
@@ -312,8 +303,17 @@ class Ytz(object):
             self.login_state = True
         if 'opponent' in protocol and protocol['opponent'] not in self.player_list:
             self.player_list.update({protocol['opponent']: protocol['order']})
+            self.score_record.update({protocol['opponent']: {}})
+            for i in range(17):     # 创建dict对象来记录该玩家的分数，False表示未计分
+                self.score_record[protocol['opponent']].update(
+                    {i: {"score": 0, "recorded": False}})
+            for j in [7, 15, 16]:   # 对于Bonus和总分项不需要点击登记，而是实时计算
+                self.score_record[protocol['opponent']][j]["recorded"] = True
+            logger.info('player {} joined the game'.format(protocol['opponent']))
         if 'begin' in protocol:
             self.player = [key for key, value in self.player_list.items() if value == 0][0]
+            logger.info('game begins, self.player = {}'.format(self.player))
+            self.draw_board()
 
     @staticmethod
     def play_music(path, volume, time):
@@ -366,30 +366,40 @@ class Ytz(object):
         # 向服务端发送登录信息
         protocol = str({"protocol": "login", "name": self.name, "player_num": self.player_num})
         s.send(protocol.encode())
-        # try:
+        # 向服务端发送本地操作信息
         while True:
-            if self.player == self.name:
-                self.draw_board()
-                for event in pygame.event.get():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    logger.info('主动退出')
+                    pygame.quit()
+                    sys.exit()
+                if self.player == self.name:
+                    logger.info('new event: {}'.format(event))
                     protocol = self.check_event(event)
+                    logger.info('local protocol: {}'.format(protocol))
                     if protocol:
                         if self.call_method(protocol):
                             s.send(str(protocol).encode())
-            elif self.player and self.player != self.name:
-                self.draw_board()
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        logger.info('主动退出')
-                        pygame.quit()
-                        sys.exit()
-                    if self.player == self.name:
-                        break
-            else:
-                pass
+                self.draw_text('游戏运行中', config.x_length / 2, config.y_length / 2, 10)
+            # if self.player == self.name:
+            #     self.draw_board()
+            #     for event in pygame.event.get():
+            #         protocol = self.check_event(event)
+            #         if protocol:
+            #             if self.call_method(protocol):
+            #                 s.send(str(protocol).encode())
+            # elif self.player and self.player != self.name:
+            #     self.draw_board()
+            #     for event in pygame.event.get():
+            #         if event.type == QUIT:
+            #             logger.info('主动退出')
+            #             pygame.quit()
+            #             sys.exit()
+            #         if self.player == self.name:
+            #             break
+            # else:
+            #     pass
             self.game_over()
-        # except ConnectionResetError:
-        #     s.close()
-        #     logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 def main():
