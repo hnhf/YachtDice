@@ -1,8 +1,10 @@
 import json
-import time
 import socket
 from threading import Thread
+
 from loguru import logger
+
+logger.add('./logs/server.log')
 
 
 class Server:
@@ -10,13 +12,17 @@ class Server:
     def __init__(self, ip, port):
         self.connections = []  # 所有客户端连接
         logger.info('服务器启动中，请稍候...')
+        self.state = False
         try:
             self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 监听者，用于接收新的socket连接
             self.listener.bind((ip, port))  # 绑定ip、端口
             self.listener.listen(5)  # 最大等待数
-        except:
-            logger.info('服务器启动失败，请检查ip端口是否被占用。详细原因请查看日志文件')
-        logger.info('服务器启动成功：{}:{}'.format(ip, port))
+            self.state = True
+        except OSError:
+            logger.error('服务器启动失败，请检查ip端口是否被占用。详细原因请查看日志文件')
+            exit()
+        if self.state:
+            logger.info('服务器启动成功：{}:{}'.format(ip, port))
         while True:
             client, _ = self.listener.accept()  # 阻塞，等待客户端连接
             user = Player(client, self.connections)
@@ -46,13 +52,13 @@ class Player:
         # 接收数据
         try:
             while True:
-                data = self.socket.recv(4096)   # 我们这里只做一个简单的服务端框架，只做粘包不做分包处理。
-                if len(data) == 0:              # 数据为空则判断为玩家离线
+                data = self.socket.recv(4096)  # 我们这里只做一个简单的服务端框架，只做粘包不做分包处理。
+                if len(data) == 0:  # 数据为空则判断为玩家离线
                     logger.info('有玩家离线')
                     self.socket.close()
                     self.connections.remove(self)
                     break
-                self.deal_data(data)            # 处理数据
+                self.deal_data(data)  # 处理数据
         except ConnectionError:
             self.socket.close()
             self.connections.remove(self)
@@ -130,4 +136,4 @@ class ProtocolHandler:
 
 
 if __name__ == '__main__':
-    server = Server('192.168.201.64', 6666)
+    server = Server('192.168.201.64', 6667)
