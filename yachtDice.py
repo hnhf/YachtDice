@@ -7,7 +7,6 @@ import json
 import random
 import math
 import sys
-import time
 import numpy as np
 import pygame
 from pygame.locals import *
@@ -15,7 +14,6 @@ from loguru import logger
 from conf import config
 import socket
 from tools.frozen import get_path
-from threading import Thread
 
 pygame.display.set_caption('游艇骰子')
 pygame.init()
@@ -30,7 +28,7 @@ PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((IP, PORT))
-
+s.setblocking(0)
 
 class Ytz(object):
     def __init__(self, name, number):
@@ -51,6 +49,7 @@ class Ytz(object):
         self.player = None  # 当前回合玩家
         self.login_state = False
         self.player_list = {self.name: self.order}
+        self.player_location = config.locations[self.player_num - 2]
         self.game_turn = 1  # 回合数
         self.roll_time = 0  # 本回合摇骰子次数
         self.dice = [0, 0, 0, 0, 0]  # 当前骰子点数
@@ -77,7 +76,6 @@ class Ytz(object):
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
 
         # 显示出游戏玩家
-        player_location = config.locations[self.player_num - 2]
         self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
                          (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
@@ -87,16 +85,16 @@ class Ytz(object):
         # 显示出各项分数
         for player, order in self.player_list.items():
             self.screen.blit(font_player.render(player, True, player_color[order]),
-                             (player_location[order] - 30, config.dice_length + 5))
+                             (self.player_location[order] - 30, config.dice_length + 5))
             for key, value in self.score_record[player].items():
                 if self.score_record[player][key]["recorded"]:
                     single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                      config.black)
-                    self.screen.blit(single_score, (player_location[order], config.dice_length + config.list_y_length +
+                    self.screen.blit(single_score, (self.player_location[order], config.dice_length + config.list_y_length +
                                                     config.score_font / 2 + key * config.list_y_length))
                 if player == self.player and not self.score_record[player][key]["recorded"]:
                     single_score = font_score.render(str(self.score_now[key]), True, config.gray)
-                    self.screen.blit(single_score, (player_location[order], config.dice_length + config.list_y_length +
+                    self.screen.blit(single_score, (self.player_location[order], config.dice_length + config.list_y_length +
                                                     config.score_font / 2 + key * config.list_y_length))
 
         # 显示出屏幕左边的得分列表
@@ -122,8 +120,10 @@ class Ytz(object):
         # 根据玩家数量用竖线把各玩家分数隔开
         for i in range(self.player_num):
             pygame.draw.line(self.screen, config.black,
-                             (config.list_x_length + i * config.list_player_length / self.player_num, config.dice_length),
-                             (config.list_x_length + i * config.list_player_length / self.player_num, config.y_length), 3)
+                             (config.list_x_length + i * config.list_player_length / self.player_num,
+                              config.dice_length),
+                             (config.list_x_length + i * config.list_player_length / self.player_num, config.y_length),
+                             3)
         pygame.display.update()
 
     # 弹出提示
@@ -150,7 +150,7 @@ class Ytz(object):
                     mouse_y - config.roll_circle_position[1]) ** 2 < config.select_range ** 2:
                 return {"protocol": "roll_dice", "button": "down", 'from': self.name}  # 鼠标在摇按钮处点下
             for i in range(17):  # 如果点击的位置是自己分数的位置的话
-                if (mouse_x - config.locations[self.player_num][self.player_list[self.name]]) ** 2 + (
+                if (mouse_x - self.player_location[self.player_list[self.name]]) ** 2 + (
                         mouse_y - (config.dice_length + config.list_y_length * 1.5 + i * config.list_y_length)) ** 2 < (
                         config.list_y_length / 2) ** 2:
                     return {"protocol": "record_score", "button": i, 'from': self.name}
@@ -273,7 +273,7 @@ class Ytz(object):
             self.score_record[self.player][16]["score"] = self.score_record[self.player][7]["score"] + \
                                                           self.score_record[self.player][15]["score"]
             self.player = [key for key, value in self.player_list.items() if
-                           value == (self.player_list[self.player] + 1) % len(self.player_list)]  # 交换玩家
+                           value == (self.player_list[self.player] + 1) % len(self.player_list)][0]  # 交换玩家
             self.game_turn += 1  # 回合数+1
             self.roll_time = 0  # 摇骰子次数变为0
             self.dice = [0, 0, 0, 0, 0]  # 初始化五个骰子
@@ -305,10 +305,10 @@ class Ytz(object):
         if 'opponent' in protocol and protocol['opponent'] not in self.player_list:
             self.player_list.update({protocol['opponent']: protocol['order']})
             self.score_record.update({protocol['opponent']: {}})
-            for i in range(17):     # 创建dict对象来记录该玩家的分数，False表示未计分
+            for i in range(17):  # 创建dict对象来记录该玩家的分数，False表示未计分
                 self.score_record[protocol['opponent']].update(
                     {i: {"score": 0, "recorded": False}})
-            for j in [7, 15, 16]:   # 对于Bonus和总分项不需要点击登记，而是实时计算
+            for j in [7, 15, 16]:  # 对于Bonus和总分项不需要点击登记，而是实时计算
                 self.score_record[protocol['opponent']][j]["recorded"] = True
             logger.info('player {} joined the game'.format(protocol['opponent']))
         if 'begin' in protocol:
@@ -348,76 +348,57 @@ class Ytz(object):
                 if method(data1):
                     self.draw_board()
                     return True
+        elif 'protocol' in data:
+            protocol = data['protocol']
+            if not hasattr(self, protocol):
+                return None
+            method = getattr(self, protocol)
+            if method(data):
+                self.draw_board()
+                return True
         # 根据协议中的protocol字段，直接调用相应的函数处理
 
-    def recv_data(self):
-        while True:
-            try:
-                data = s.recv(4096)  # 只做粘包不做分包处理。
-                if len(data) == 0:
-                    logger.info('有玩家离线')
-                    s.close()
-                    break
-                self.call_method(data)
-                # 将字节流转成字符串
-            except BlockingIOError:
-                pass
-
-    def send_data(self):
-        # 向服务端发送登录信息
+    def run(self):
         protocol = str({"protocol": "login", "name": self.name, "player_num": self.player_num})
         s.send(protocol.encode())
-        # 向服务端发送本地操作信息
-        while True:
-            for event in pygame.event.get():
-                logger.info('new event: {}'.format(event))
-                if event.type == pygame.QUIT:
-                    logger.info('主动退出')
-                    pygame.quit()
-                    sys.exit()
+        try:
+            while True:
+                try:
+                    data = s.recv(4096)  # 只做粘包不做分包处理。
+                    if len(data) == 0:
+                        logger.info('有玩家离线')
+                        s.close()
+                        break
+                    self.call_method(data)
+                    # 将字节流转成字符串
+                except BlockingIOError:
+                    pass
                 if self.player == self.name:
-                    protocol = self.check_event(event)
-                    logger.info('local protocol: {}'.format(protocol))
-                    if protocol:
-                        if self.call_method(protocol):
-                            s.send(str(protocol).encode())
-                self.draw_text('游戏运行中', config.x_length / 2, config.y_length / 2, 10)
-            # if self.player == self.name:
-            #     self.draw_board()
-            #     for event in pygame.event.get():
-            #         protocol = self.check_event(event)
-            #         if protocol:
-            #             if self.call_method(protocol):
-            #                 s.send(str(protocol).encode())
-            # elif self.player and self.player != self.name:
-            #     self.draw_board()
-            #     for event in pygame.event.get():
-            #         if event.type == QUIT:
-            #             logger.info('主动退出')
-            #             pygame.quit()
-            #             sys.exit()
-            #         if self.player == self.name:
-            #             break
-            # else:
-            #     pass
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            logger.info('主动退出')
+                            pygame.quit()
+                            sys.exit()
+                        protocol = self.check_event(event)
+                        if protocol:
+                            logger.info('local protocol: {}'.format(protocol))
+                            if self.call_method(protocol):
+                                s.send(str(protocol).encode())
+                elif self.player and self.player != self.name:
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if self.player == self.name:
+                            break
                 self.game_over()
-                time.sleep(0.1)
-
-
-def main():
-    # logger.info("请输入昵称:")
-    # p_name = input()
-    # logger.info("请输入玩家数量:")
-    # p_number = input()
-    p_name = 'aoto'
-    p_number = '2'
-    y = Ytz(p_name, p_number)
-    threads = list()
-    threads.append(Thread(target=y.send_data))
-    threads.append(Thread(target=y.recv_data))
-    for thread in threads:
-        thread.start()
+        except:
+            s.close()
+            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
 
 
 if __name__ == "__main__":
-    main()
+    p_name = 'aoto'
+    p_number = '3'
+    y = Ytz(p_name, p_number)
+    y.run()
