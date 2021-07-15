@@ -25,7 +25,7 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '47.100.25.83'
+IP = '192.168.31.8'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,7 +35,7 @@ s.setblocking(False)
 
 class Ytz(object):
     def __init__(self, name, number):
-        self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
+        # self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load(get_path('resource/images/background.jpg'))
@@ -91,8 +91,12 @@ class Ytz(object):
                              (self.player_location[order] - 30, config.dice_length + 5))
             for key, value in self.score_record[player].items():
                 if self.score_record[player][key]["recorded"]:
+                    if key == 7 or key == 15 or key == 16:
+                        score_color = config.blue
+                    else:
+                        score_color = config.black
                     single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
-                                                     config.black)
+                                                     score_color)
                     self.screen.blit(single_score,
                                      (self.player_location[order], config.dice_length + config.list_y_length +
                                       config.score_font / 2 + key * config.list_y_length))
