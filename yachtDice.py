@@ -7,6 +7,7 @@ import json
 import random
 import math
 import sys
+import time
 import numpy as np
 import pygame
 from pygame.locals import *
@@ -24,7 +25,7 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '10.166.23.147'
+IP = '192.168.1.119'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -369,12 +370,12 @@ class Ytz(object):
         # 向服务端发送本地操作信息
         while True:
             for event in pygame.event.get():
+                logger.info('new event: {}'.format(event))
                 if event.type == pygame.QUIT:
                     logger.info('主动退出')
                     pygame.quit()
                     sys.exit()
                 if self.player == self.name:
-                    logger.info('new event: {}'.format(event))
                     protocol = self.check_event(event)
                     logger.info('local protocol: {}'.format(protocol))
                     if protocol:
@@ -399,7 +400,8 @@ class Ytz(object):
             #             break
             # else:
             #     pass
-            self.game_over()
+                self.game_over()
+                time.sleep(0.1)
 
 
 def main():
