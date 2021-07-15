@@ -4,15 +4,17 @@ Created on Thu Jul  1 17:14:09 2021
 @author: Fan
 """
 import json
-import random
 import math
+import random
+import socket
 import sys
+
 import numpy as np
 import pygame
-from pygame.locals import *
 from loguru import logger
+from pygame.locals import *
+
 from conf import config
-import socket
 from tools.frozen import get_path
 
 pygame.display.set_caption('游艇骰子')
@@ -23,16 +25,17 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '192.168.1.119'
+IP = '47.100.25.83'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((IP, PORT))
-s.setblocking(0)
+s.setblocking(False)
+
 
 class Ytz(object):
     def __init__(self, name, number):
-        #  self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
+        self.play_music(get_path('resource/audio/caromhall.mp3'), 0.08, -1)
         self.screen = pygame.display.set_mode((config.x_length, config.y_length))
         self.bg_color = config.white
         self.bg_picture = pygame.image.load(get_path('resource/images/background.jpg'))
@@ -90,12 +93,14 @@ class Ytz(object):
                 if self.score_record[player][key]["recorded"]:
                     single_score = font_score.render(str(self.score_record[player][key]["score"]), True,
                                                      config.black)
-                    self.screen.blit(single_score, (self.player_location[order], config.dice_length + config.list_y_length +
-                                                    config.score_font / 2 + key * config.list_y_length))
+                    self.screen.blit(single_score,
+                                     (self.player_location[order], config.dice_length + config.list_y_length +
+                                      config.score_font / 2 + key * config.list_y_length))
                 if player == self.player and not self.score_record[player][key]["recorded"]:
                     single_score = font_score.render(str(self.score_now[key]), True, config.gray)
-                    self.screen.blit(single_score, (self.player_location[order], config.dice_length + config.list_y_length +
-                                                    config.score_font / 2 + key * config.list_y_length))
+                    self.screen.blit(single_score,
+                                     (self.player_location[order], config.dice_length + config.list_y_length +
+                                      config.score_font / 2 + key * config.list_y_length))
 
         # 显示出屏幕左边的得分列表
         for j in range(17):
@@ -250,8 +255,9 @@ class Ytz(object):
     # 选择分数
     def record_score(self, protocol):
         e = protocol['button']
-        if protocol['from'] == self.player and self.roll_time != 0 and not self.score_record[self.player][e][
-            "recorded"]:
+        if protocol['from'] == self.player \
+                and self.roll_time != 0 and not self.score_record[self.player][e]["recorded"]:
+            self.play_music(get_path('resource/audio/nice_choice.mp3'), 1, 1)
             #  如果来自于当前玩家, 并且已经摇过一次骰子，并且此位置未记录分数
             logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[e]))
             self.score_record[self.player][e]["score"] = self.score_now[e]
@@ -298,7 +304,7 @@ class Ytz(object):
     # 处理登录信息
     def login(self, protocol):
         if 'login_state' in protocol:
-            logger.info("登录成功")
+            logger.info("登录成功,等待其他玩家加入...")
             self.order = protocol['order']
             self.player_list[self.name] = self.order
             self.login_state = True
@@ -392,13 +398,21 @@ class Ytz(object):
                         if self.player == self.name:
                             break
                 self.game_over()
-        except:
+        except ConnectionError:
             s.close()
-            logger.info('服务器发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
+            logger.info('服务器发送的数据异常,已强制下线')
 
 
 if __name__ == "__main__":
-    p_name = 'aoto'
-    p_number = '3'
+    logger.info('请输入昵称')
+    p_name = input()
+    while len(p_name) > 5:
+        logger.info('昵称过长请重新输入')
+        p_name = input()
+    logger.info('请输入玩家数(2或3)')
+    p_number = input()
+    while int(p_number) not in [2, 3]:
+        logger.info('错误,请重新输入人数')
+        p_number = input()
     y = Ytz(p_name, p_number)
     y.run()

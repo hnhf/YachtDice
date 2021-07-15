@@ -53,7 +53,7 @@ class Player:
                     self.connections.remove(self)
                     break
                 self.deal_data(data)            # 处理数据
-        except:
+        except ConnectionError:
             self.socket.close()
             self.connections.remove(self)
             logger.info('有用户发送的数据异常：' + bytes.decode() + '\n' + '已强制下线，详细原因请查看日志文件')
@@ -130,4 +130,4 @@ class ProtocolHandler:
 
 
 if __name__ == '__main__':
-    server = Server('192.168.1.119', 6666)
+    server = Server('192.168.201.64', 6666)
