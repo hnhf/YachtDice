@@ -257,7 +257,7 @@ class Ytz(object):
         e = protocol['button']
         if protocol['from'] == self.player \
                 and self.roll_time != 0 and not self.score_record[self.player][e]["recorded"]:
-            self.play_music(get_path('resource/audio/nice_choice.mp3'), 1, 1)
+            # self.play_music(get_path('resource/audio/nice_choice.mp3'), 1, 1)
             #  如果来自于当前玩家, 并且已经摇过一次骰子，并且此位置未记录分数
             logger.info('Turn = {}, {} score {} = {}'.format(self.game_turn, self.player, e, self.score_now[e]))
             self.score_record[self.player][e]["score"] = self.score_now[e]
@@ -327,7 +327,7 @@ class Ytz(object):
         logger.debug('play music:{} {} time'.format(path, "∞" if time == -1 else time))
         music = pygame.mixer.Sound(get_path(path))
         music.set_volume(volume)
-        music.play(time, 0, 0)
+        music.play(time - 1 if time != -1 else -1, 0, 0)
 
     def call_method(self, data):
         if type(data) == bytes:
