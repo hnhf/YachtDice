@@ -7,4 +7,4 @@ call env\Scripts\activate.bat
 echo 安装依赖
 pip install -r requirements
 echo 开始打包
-pyinstaller --clean --win-private-assemblies -i images/icon.ico -F yachtDice.py --add-data "audio;audio" --add-data "images;images" --add-data "font;font"
+pyinstaller --clean --win-private-assemblies -i resource/images/icon.ico -F yachtDice.py --add-data "resource;resource"

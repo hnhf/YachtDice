@@ -25,7 +25,7 @@ font_player = pygame.font.Font(get_path('resource/font/simhei.ttf'), 28)
 font_20 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 20)
 font_25 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 25)
 font_30 = pygame.font.Font(get_path('resource/font/simhei.ttf'), 30)
-IP = '192.168.31.8'
+IP = '47.100.25.83'
 PORT = 6666
 # 建立socket连接
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -79,7 +79,7 @@ class Ytz(object):
         self.screen.blit(font_roll.render('摇', True, config.red), config.roll_position)
 
         # 显示出游戏玩家
-        self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / 2)), True, config.black),
+        self.screen.blit(font_player.render('回合{}/13'.format(math.ceil(self.game_turn / self.player_num)), True, config.black),
                          (42, 105))
         self.screen.blit(font_25.render('{}/3'.format(self.roll_time), True, config.black), (531, 75))
         player_color = [config.black, config.black, config.black]
